@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>¡Bendiciones en este mundo! · Axel RPG</title>
+    <style>
+        :root {
+            --g: #ffd36b;
+            --p: rgba(14, 18, 36, .9);
+            --l: rgba(255, 211, 107, .45)
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #85c7f2;
+            color: #f5f2e9;
+            font-family: Georgia, serif
+        }
+
+        canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%
+        }
+
+        .p {
+            position: fixed;
+            z-index: 3;
+            background: var(--p);
+            border: 1px solid var(--l);
+            border-radius: 12px;
+            padding: 11px;
+            backdrop-filter: blur(8px)
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            color: var(--g)
+        }
+
+        h3 {
+            margin: 0 0 6px;
+            color: var(--g)
+        }
+
+        p {
+            margin: 0
+        }
+
+        small {
+            color: #bdc7d5;
+            font-size: 12px
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin: 7px 0 2px
+        }
+
+        input,
+        select {
+            width: 100%
+        }
+
+        input[type=color] {
+            height: 26px;
+            border: 0;
+            background: none
+        }
+
+        button {
+            border: 1px solid #b68a43;
+            background: linear-gradient(#805b2d, #51391f);
+            color: #fff2d3;
+            padding: 7px 9px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 4px 3px 0 0
+        }
+
+        button:hover {
+            filter: brightness(1.25)
+        }
+
+        #custom {
+            top: 10px;
+            left: 10px;
+            width: 220px;
+            max-height: calc(100% - 20px);
+            overflow: auto
+        }
+
+        #hud {
+            top: 10px;
+            right: 10px;
+            width: 230px
+        }
+
+        #quest {
+            top: 178px;
+            right: 10px;
+            width: 230px;
+            font-size: 13px
+        }
+
+        #skills {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            padding: 8px
+        }
+
+        .bar {
+            height: 9px;
+            background: #293346;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 2px 0 6px
+        }
+
+        .bar i {
+            display: block;
+            height: 100%
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px
+        }
+
+        #chant {
+            position: fixed;
+            z-index: 5;
+            top: 22%;
+            width: 100%;
+            text-align: center;
+            font-size: clamp(18px, 3.4vw, 34px);
+            color: #ffb340;
+            text-shadow: 0 0 14px #ff4a10, 0 2px 0 #000;
+            display: none;
+            pointer-events: none;
+            font-style: italic
+        }
+
+        #dlg {
+            display: none;
+            z-index: 6;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(520px, 92vw);
+            border: 2px solid var(--g);
+            text-align: center
+        }
+
+        #toast {
+            position: fixed;
+            z-index: 8;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #171d2de8;
+            border: 1px solid var(--g);
+            border-radius: 9px;
+            padding: 9px 15px;
+            display: none;
+            font: 13px Arial
+        }
+
+        #flash {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 7
+        }
+
+        #fl {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 4
+        }
+
+        .f,
+        .tag {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font: bold 16px Arial;
+            text-shadow: 0 2px 3px #000;
+            white-space: nowrap
+        }
+
+        .tag {
+            font: 11px Arial;
+            color: #fff;
+            background: #0009;
+            padding: 2px 6px;
+            border-radius: 6px
+        }
+
+        .hint {
+            position: fixed;
+            left: 10px;
+            bottom: 10px;
+            z-index: 2;
+            padding: 8px 10px;
+            background: #0c142acc;
+            border-radius: 8px;
+            font: 12px/1.5 Arial
+        }
+
+        @media(max-width:760px) {
+            #custom {
+                width: 170px
+            }
+
+            #hud,
+            #quest {
+                width: 170px
+            }
+
+            .hint {
+                display: none
+            }
+
+            #skills {
+                flex-wrap: wrap;
+                width: 92vw;
+                bottom: 4px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gl"></canvas>
+    <div id="flash"></div>
+    <div id="fl"></div>
+    <div id="chant"></div>
+    <section id="custom" class="p">
+        <h1>✦ Gremio de Axel</h1><small>Personaliza a tu aventurero [C]</small>
+        <label>Altura</label><input id="height" type="range" min=".8" max="1.3" step=".05" value="1">
+        <label>Anchura</label><input id="width" type="range" min=".8" max="1.3" step=".05" value="1">
+        <label>Piel</label><input id="skin" type="color" value="#f2bf9c"><label>Cabello</label><input id="hair"
+            type="color" value="#6b4a2f">
+        <label>Armadura</label><input id="armor" type="color" value="#3f7a5c">
+        <label>Sombrero</label><select id="hat">
+            <option value="none">Ninguno</option>
+            <option value="wizard">Sombrero de bruja</option>
+            <option value="helmet">Yelmo</option>
+        </select>
+        <label>Capa</label><select id="cape">
+            <option value="none">Sin capa</option>
+            <option value="#3f9a5c">Verde aventurero</option>
+            <option value="#a52e3b">Carmesí</option>
+            <option value="#244e9a">Azul real</option>
+        </select>
+        <label>Clase</label><select id="cls">
+            <option value="mage">Archimago — Explosión</option>
+            <option value="warrior">Cruzado — Golpe sísmico</option>
+            <option value="shadow">Monarca de Sombras — ¡ARISE!</option>
+            <option value="samurai">Samurái — Iaido Lunar</option>
+            <option value="ninja">Kunoichi — Clones</option>
+            <option value="star">Maga Estelar — Rayo Estelar</option>
+            <option value="archer">Arquera Élfica — Flecha Celestial</option>
+        </select>
+    </section>
+    <section id="hud" class="p">
+        <h1 id="cn">Archimago · Nv 1</h1>
+        <div class="row"><span id="hpt"></span><span>♥ Salud</span></div>
+        <div class="bar"><i id="hpb" style="background:#d64e54"></i></div>
+        <div class="row"><span id="mpt"></span><span>✦ Maná</span></div>
+        <div class="bar"><i id="mpb" style="background:#4c8fe0"></i></div>
+        <div class="row"><span id="xpt"></span><span>XP</span></div>
+        <div class="bar"><i id="xpb" style="background:#e9b94c"></i></div>
+        <div class="row"><b id="eris" style="color:#ffd36b"></b><span id="pts"></span></div>
+    </section>
+    <section id="quest" class="p"><b style="color:#ffd36b">📜 Misión</b>
+        <div id="qt">Habla con Liria en el gremio.</div>
+    </section>
+    <section id="stat" class="p" style="top:262px;right:10px;width:230px">
+        <div id="spt" style="font-size:12px;color:#ffd36b"></div><button data-s="str"></button><button
+            data-s="vit"></button><button data-s="agi"></button><button data-s="int"></button>
+    </section>
+    <section id="skills" class="p"><button id="b1">Ataque [Espacio]</button><button id="b2">Explosión
+            [Q]</button><button id="b5">Habilidad [R]</button><button id="b3">Bendición [F]</button><button
+            id="b4">Mejorar</button></section>
+    <div class="hint">WASD mover · Shift correr · Ratón arrastrar: cámara · Espacio ataque · Q habilidad definitiva · F
+        bendición de Aqua · E hablar · C personaje</div>
+    <div id="dlg" class="p">
+        <h3 id="dn"></h3>
+        <p id="dt"></p>
+        <div id="db"></div>
+    </div>
+    <div id="toast"></div>
+    <script>
+        'use strict';
+        const $ = s => document.querySelector(s), cv = $('#gl'), gl = cv.getContext('webgl', {antialias: true});
+        if (!gl) {document.body.innerHTML = '<h2 style="padding:30px">Tu navegador no admite WebGL.</h2>'; throw 0}
+        const VS = `attribute vec3 aP,aN;uniform mat4 uM,uV,uP;uniform float uO;varying vec3 vW;varying vec3 vN;varying float vD,vO;
+void main(){vec4 w=uM*vec4(aP,1.);vec3 n=normalize(mat3(uM)*aN);w.xyz+=n*uO;vec4 v=uV*w;vD=length(v.xyz);vW=w.xyz;vN=n;vO=uO;gl_Position=uP*v;}`;
+        const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec3 vN,vW;varying float vD,vO;uniform vec3 uC,uE,uSky,uCam;uniform float uA,uF,uG;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float nz(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+void main(){if(vO>0.){gl_FragColor=vec4(.09,.05,.12,1.);return;}
+float d=dot(normalize(vN),normalize(vec3(-.4,1.,.35)));float l=d>.3?1.:d>-.15?.8:.62;
+vec3 c=uC*l*(l<.9?vec3(.86,.88,1.06):vec3(1.04,1.,.94))+uE+pow(1.-max(dot(normalize(vN),normalize(uCam-vW)),0.),3.)*.16*vec3(1.,.93,.8)*step(uG,.5);
+if(uG>.5){vec2 p=vW.xz;float a=nz(p*.09)*.6+nz(p*.35)*.4,b=nz(p*vec2(7.,13.))*.5+nz(p*vec2(19.,31.))*.5;
+vec3 g0=vec3(.20,.49,.17),g1=vec3(.36,.70,.22),g2=vec3(.62,.86,.34);
+c=mix(g0,g1,smoothstep(.38,.46,a));c=mix(c,g2,smoothstep(.62,.68,a)*.8);c=mix(c,g0*.8,smoothstep(.6,.72,b)*.45);c+=vec3(.07,.09,0.)*smoothstep(.78,.9,b);c*=.93+.07*sin(p.x*.6)*sin(p.y*.6);}
+float f=uF*clamp((length(vW-uCam)-70.)/150.,0.,1.);gl_FragColor=vec4(mix(c,uSky,f),uA);}`;
+        const sh = (t, s) => {const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(o)); return o};
+        const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+        const U = {};['uM', 'uV', 'uP', 'uC', 'uE', 'uA', 'uO', 'uSky', 'uF', 'uG', 'uCam'].forEach(k => U[k] = gl.getUniformLocation(pr, k));
+        const aP = gl.getAttribLocation(pr, 'aP'), aN = gl.getAttribLocation(pr, 'aN'); gl.enableVertexAttribArray(aP); gl.enableVertexAttribArray(aN);
+        const SKY = [.52, .78, .96]; let EYE = [0, 5, 10];
+        const V = (a, b) => a.map((x, i) => x + b[i]), sub = (a, b) => a.map((x, i) => x - b[i]), dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0), cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], norm = a => {const l = Math.hypot(...a) || 1; return a.map(x => x / l)};
+        const M = {
+            id: () => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+            mul(a, b) {const o = new Float32Array(16); for (let c = 0; c < 4; c++)for (let r = 0; r < 4; r++)o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3]; return o},
+            T(x, y, z) {const m = M.id(); m[12] = x; m[13] = y; m[14] = z; return m}, S(x, y, z) {const m = M.id(); m[0] = x; m[5] = y; m[10] = z; return m},
+            Ry(a) {const m = M.id(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[2] = -s; m[8] = s; m[10] = c; return m},
+            Rx(a) {const m = M.id(), c = Math.cos(a), s = Math.sin(a); m[5] = c; m[6] = s; m[9] = -s; m[10] = c; return m},
+            Rz(a) {const m = M.id(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[1] = s; m[4] = -s; m[5] = c; return m},
+            P(f, a, n, r) {const t = 1 / Math.tan(f / 2), m = new Float32Array(16); m[0] = t / a; m[5] = t; m[10] = (r + n) / (n - r); m[11] = -1; m[14] = 2 * r * n / (n - r); return m},
+            L(e, c, u) {const z = norm(sub(e, c)), x = norm(cross(u, z)), y = cross(z, x), m = M.id(); m[0] = x[0]; m[1] = y[0]; m[2] = z[0]; m[4] = x[1]; m[5] = y[1]; m[6] = z[1]; m[8] = x[2]; m[9] = y[2]; m[10] = z[2]; m[12] = -dot(x, e); m[13] = -dot(y, e); m[14] = -dot(z, e); return m}
+        };
+        /* Geometría: el triángulo se reorienta solo para que siempre mire hacia fuera. */
+        function geo(k, sg = 14) {
+            const p = [], n = [];
+            const tri = (a, b, c, na, nb, nc) => {if (dot(cross(sub(b, a), sub(c, a)), V(V(na, nb), nc)) < 0) {[b, c] = [c, b];[nb, nc] = [nc, nb]} p.push(...a, ...b, ...c); n.push(...na, ...nb, ...nc)};
+            if (k === 'box') {for (let ax = 0; ax < 3; ax++)for (const sg2 of [-1, 1]) {const u = (ax + 1) % 3, v = (ax + 2) % 3, nr = [0, 0, 0]; nr[ax] = sg2; const q = (a, b) => {const t = [0, 0, 0]; t[ax] = sg2 * .5; t[u] = a * .5; t[v] = b * .5; return t}; tri(q(-1, -1), q(1, -1), q(1, 1), nr, nr, nr); tri(q(-1, -1), q(1, 1), q(-1, 1), nr, nr, nr)} }
+            else if (k === 'moon') {
+                const dx = .42, ri = .88, x = (1 + dx * dx - ri * ri) / (2 * dx), T = Math.acos(x), sT = Math.acos((x - dx) / ri), up = [0, 1, 0], dn = [0, -1, 0], n2 = sg * 2;
+                const O = u => {const a = T + (Math.PI * 2 - 2 * T) * u; return [Math.cos(a), 0, Math.sin(a)]}, I = u => {const a = sT + (Math.PI * 2 - 2 * sT) * u; return [dx + ri * Math.cos(a), 0, ri * Math.sin(a)]};
+                for (let i = 0; i < n2; i++) {const u = i / n2, v = (i + 1) / n2; for (const nn of [up, dn]) {tri(O(u), I(u), O(v), nn, nn, nn); tri(I(u), I(v), O(v), nn, nn, nn)} }
+            }
+            else if (k === 'sphere') {const pt = (a, b) => [Math.sin(a) * Math.cos(b), Math.cos(a), Math.sin(a) * Math.sin(b)]; for (let y = 0; y < sg; y++)for (let x = 0; x < sg * 2; x++) {const a0 = y * Math.PI / sg, a1 = (y + 1) * Math.PI / sg, b0 = x * Math.PI / sg, b1 = (x + 1) * Math.PI / sg, A = pt(a0, b0), B = pt(a1, b0), C = pt(a1, b1), D = pt(a0, b1); tri(A, B, C, A, B, C); tri(A, C, D, A, C, D)} }
+            else for (let i = 0; i < sg; i++) {
+                const a = i * Math.PI * 2 / sg, b = (i + 1) * Math.PI * 2 / sg, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), up = [0, 1, 0];
+                if (k === 'ring') {const q = (g, r) => [Math.cos(g) * r, 0, Math.sin(g) * r]; const dn = [0, -1, 0]; tri(q(a, .8), q(a, 1), q(b, 1), up, up, up); tri(q(a, .8), q(b, 1), q(b, .8), up, up, up); tri(q(a, .8), q(a, 1), q(b, 1), dn, dn, dn); tri(q(a, .8), q(b, 1), q(b, .8), dn, dn, dn)}
+                else if (k === 'cone') {const na = [ca, .5, sa], nb = [cb, .5, sb]; tri([ca, -.5, sa], [cb, -.5, sb], [0, .5, 0], na, nb, up); tri([0, -.5, 0], [ca, -.5, sa], [cb, -.5, sb], [0, -1, 0], [0, -1, 0], [0, -1, 0])}
+                else {const na = [ca, 0, sa], nb = [cb, 0, sb]; tri([ca, -.5, sa], [cb, -.5, sb], [cb, .5, sb], na, nb, nb); tri([ca, -.5, sa], [cb, .5, sb], [ca, .5, sa], na, nb, na); tri([0, .5, 0], [cb, .5, sb], [ca, .5, sa], up, up, up); tri([0, -.5, 0], [ca, -.5, sa], [cb, -.5, sb], [0, -1, 0], [0, -1, 0], [0, -1, 0])}
+            }
+            const mk = d => {const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(d), gl.STATIC_DRAW); return b}; return {vb: mk(p), nb: mk(n), c: p.length / 3}
+        }
+        const BOX = geo('box'), SPH = geo('sphere', 12), CYL = geo('cyl', 14), CONE = geo('cone', 14), PYR = geo('cone', 4), RING = geo('ring', 48), MOON = geo('moon', 24);
+        const hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+        class N {
+            constructor(g, c, p = [0, 0, 0], s = [1, 1, 1]) {this.g = g; this.c = g && c ? hx(c) : [1, 1, 1]; this.p = p; this.s = s; this.r = [0, 0, 0]; this.e = [0, 0, 0]; this.be = [0, 0, 0]; this.k = []; this.o = 0; this.a = 1; this.v = 1; this.nf = 0}
+            add(n) {this.k.push(n); return n}
+            m() {return M.mul(M.T(...this.p), M.mul(M.Ry(this.r[1]), M.mul(M.Rx(this.r[0]), M.mul(M.Rz(this.r[2]), M.S(...this.s)))))}
+        }
+        const roots = []; let cam = M.id(), proj = M.id(), VP = M.id();
+        const put = (n, st) => {if (st) n.st = 1; roots.push(n); return n}, rem = n => {const i = roots.indexOf(n); if (i >= 0) roots.splice(i, 1)};
+        const S3 = (g, c, p, s) => put(new N(g, c, p, s), 1);
+        function collect(n, pm, q) {if (!n.v) return; let w; if (n.W) w = n.W; else {w = M.mul(pm, n.m()); if (n.st) n.W = w} if (n.g) q.push([n, w]); for (const k of n.k) collect(k, w, q)}
+        function drawN(n, w, ol) {
+            gl.uniformMatrix4fv(U.uM, false, w); gl.uniform3fv(U.uC, n.c); gl.uniform3fv(U.uE, n.e); gl.uniform1f(U.uA, n.a); gl.uniform1f(U.uO, ol ? n.o : 0); gl.uniform1f(U.uF, n.nf ? 0 : 1); gl.uniform1f(U.uG, n.gr || 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, n.g.vb); gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, n.g.nb); gl.vertexAttribPointer(aN, 3, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.TRIANGLES, 0, n.g.c)
+        }
+        function render() {
+            gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE);
+            gl.uniformMatrix4fv(U.uV, false, cam); gl.uniformMatrix4fv(U.uP, false, proj); gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uCam, EYE);
+            const q = [], I = M.id(); for (const r of roots) collect(r, I, q);
+            gl.cullFace(gl.FRONT); for (const [n, w] of q) if (n.o && n.a >= 1) drawN(n, w, 1);
+            gl.cullFace(gl.BACK); for (const [n, w] of q) if (n.a >= 1) drawN(n, w, 0);
+            gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); for (const [n, w] of q) if (n.a < 1 && n.a > 0) drawN(n, w, 0); gl.depthMask(true); gl.disable(gl.BLEND)
+        }
+        const rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
+
+        /* ===== Personajes chibi estilo anime (cabeza grande, ojos con brillo, contorno cel-shading) ===== */
+        function chibi(c) {
+            const root = new N(null), body = root.add(new N(null)); const sdw = root.add(new N(CYL, '#10260c', [0, .03, 0], [.95, .02, .95])); sdw.a = .35;
+            const mk = (par, g, col, p, s, ol = .025) => {const n = par.add(new N(g, col, p, s)); n.o = ol; return n};
+            const legs = [-1, 1].map(d => {const l = body.add(new N(null, 0, [d * .16, .7, 0])); mk(l, CYL, c.pants, [0, -.3, 0], [.15, .6, .16]); mk(l, BOX, '#3a2c2c', [0, -.62, .05], [.25, .16, .34]); return l});
+            mk(body, BOX, c.armor, [0, 1.08, 0], [.62, .62, .4]); mk(body, BOX, c.trim, [0, .8, 0], [.66, .1, .44], 0); mk(body, CYL, c.armor, [0, .72, 0], [.46, .32, .36]); mk(body, CYL, c.trim, [0, .58, 0], [.48, .05, .38], 0); mk(body, BOX, '#fff2b0', [0, .8, .23], [.12, .1, .03], 0).e = [.3, .25, 0]; mk(body, CYL, c.trim, [0, 1.42, 0], [.3, .1, .24], 0); mk(body, SPH, c.trim, [0, 1.34, .22], [.14, .1, .07], 0); mk(body, BOX, c.trim, [0, 1.12, .21], [.3, .04, .03], 0); for (const d of [-1, 1]) {mk(body, SPH, c.trim, [d * .42, 1.42, 0], [.16, .11, .16]); mk(body, SPH, '#7a5a3a', [d * .3, .8, .1], [.09, .1, .08], 0)}
+            const arms = [-1, 1].map(d => {const a = body.add(new N(null, 0, [d * .42, 1.3, 0])); mk(a, CYL, c.armor, [0, -.26, 0], [.12, .52, .12]); mk(a, SPH, c.skin, [0, -.56, 0], [.1, .1, .1]); mk(a, CYL, c.trim, [0, -.47, 0], [.15, .08, .15], 0); return a});
+            const head = body.add(new N(null, 0, [0, 1.82, 0])); mk(head, SPH, c.skin, [0, 0, 0], [.46, .44, .44], .03);
+            for (const d of [-1, 1]) {
+                mk(head, SPH, '#fff', [d * .17, -.02, .39], [.115, .15, .05], 0); mk(head, SPH, c.eye, [d * .17, -.03, .43], [.088, .128, .04], 0).e = [.15, .15, .15]; mk(head, SPH, '#1a1020', [d * .17, -.04, .452], [.045, .07, .02], 0); mk(head, SPH, '#fff', [d * .17 + .02, .03, .465], [.03, .03, .02], 0).e = [1, 1, 1]; mk(head, SPH, '#ff9aa5', [d * .27, -.14, .34], [.07, .035, .03], 0);
+                mk(head, CONE, c.hair, [d * .46, -.08, 0], [.1, .4, .12], 0).r[0] = Math.PI
+            }
+            mk(head, BOX, '#8a3b3b', [0, -.18, .43], [.07, .02, .02], 0); for (const d of [-1, 1]) {mk(head, BOX, '#1a1214', [d * .17, .1, .43], [.17, .03, .03], 0).r[2] = d * .2; mk(head, BOX, '#1a1214', [d * .27, .07, .4], [.05, .03, .03], 0).r[2] = d * .6} mk(head, SPH, c.hair, [0, .1, -.04], [.5, .45, .5], .03);
+            for (let i = -2; i <= 2; i++)mk(head, CONE, c.hair, [i * .17, .24 - Math.abs(i) * .04, .4], [.12, .3, .1], 0).r[0] = Math.PI * .93;
+            mk(head, CONE, c.hair, [0, .55, .05], [.07, .32, .07], 0).r[2] = .3;
+            mk(head, SPH, c.hair, [0, -.08, -.22], [.46, .46, .3], 0); for (let i = -2; i <= 2; i++)mk(head, CONE, c.hair, [i * .16, -.4, -.3], [.14, .42, .1], 0).r[0] = Math.PI; if (c.long) mk(body, BOX, c.hair, [0, 1.25, -.3], [.62, 1.15, .14], 0); if (c.tails) for (const d of [-1, 1]) mk(head, CONE, c.hair, [d * .55, -.45, -.05], [.2, 1, .2], 0).r[0] = Math.PI; if (c.pony) {mk(head, CONE, c.hair, [0, -.15, -.5], [.2, 1, .2], 0).r[0] = Math.PI * .88; mk(head, SPH, c.trim, [0, .2, -.45], [.1, .1, .1], 0)}
+            if (c.hat === 'wizard') {mk(head, CYL, c.hatc || '#2a2238', [0, .38, 0], [.82, .05, .82]); mk(head, CONE, c.hatc || '#2a2238', [0, .78, 0], [.52, .85, .52]).r[0] = -.15; mk(head, CYL, c.trim, [0, .45, 0], [.5, .09, .5], 0)}
+            if (c.hat === 'helmet') {mk(head, SPH, '#aeb9c7', [0, .18, 0], [.52, .4, .52]); mk(head, CONE, '#d94b4b', [0, .62, -.05], [.1, .4, .1], 0)}
+            let capeN = body.add(new N(null, 0, [0, 1.55, -.24])); if (c.cape) {mk(capeN, BOX, c.cape, [0, -.55, -.04], [.7, 1.1, .06]); mk(capeN, BOX, c.cape, [0, -1.05, -.08], [.85, .3, .05]); mk(capeN, SPH, c.trim, [0, .02, .05], [.36, .12, .28], 0)}
+            if (c.cls === 'mage') {
+                const sf = arms[1].add(new N(null, 0, [0, -.56, 0])), W = '#c8742a'; mk(sf, CYL, W, [0, -.45, 0], [.05, .9, .05]); mk(sf, CONE, W, [0, -.95, .04], [.12, .22, .12]); mk(sf, CYL, '#f4c9cf', [0, .45, 0], [.06, .8, .06], 0); for (const y of [.9, .98]) mk(sf, CYL, '#f2b632', [0, y, 0], [.08, .05, .08], 0).e = [.3, .2, 0]; mk(sf, CYL, W, [0, 1.15, 0], [.055, .35, .055]);
+                for (const x of [-.025, .025]) {const m = mk(sf, MOON, W, [x, 1.2, .3], [.4, .4, .4], 0); m.r[2] = -Math.PI / 2}
+                mk(sf, BOX, W, [0, 1.15, .88], [.06, .2, .45]).r[0] = -.5; const o = mk(sf, SPH, c.orb || '#8a2338', [0, 1.1, .3], [.14, .14, .14], 0); o.e = [.35, .08, .12]
+            }
+            if (c.cls === 'shadow') for (const a of arms) {mk(a, BOX, '#d8ccff', [0, -.78, .15], [.05, .6, .1], 0).e = [.35, .25, .7]; mk(a, BOX, '#2a1a4a', [0, -.58, .05], [.07, .12, .14], 0)}
+            if (c.cls === 'warrior') {mk(arms[1], BOX, '#e6edf7', [0, .35, .1], [.08, .95, .04]); mk(arms[1], BOX, '#d5a34c', [0, -.1, .1], [.3, .07, .1]); const s = mk(arms[0], CYL, '#8a96a6', [-.14, -.35, 0], [.32, .07, .32]); s.r[2] = Math.PI / 2}
+            if (c.cls === 'samurai') {const k = arms[1]; mk(k, BOX, '#e6edf7', [0, .35, .1], [.05, 1.05, .03]); mk(k, BOX, '#d5a34c', [0, -.1, .1], [.25, .06, .1]); mk(k, BOX, '#2a1a2a', [0, -.3, .1], [.06, .22, .06]); mk(body, BOX, '#c0303a', [0, .84, 0], [.7, .08, .5], 0)}
+            if (c.cls === 'ninja') {mk(head, BOX, '#25356b', [0, .27, .1], [.92, .1, .9], 0); mk(head, BOX, '#cfd6e4', [0, .27, .5], [.3, .09, .03], 0); mk(body, BOX, '#8a2330', [0, 1.38, 0], [.5, .14, .4], 0); mk(body, BOX, '#8a2330', [.1, 1.2, -.3], [.14, .5, .08], 0); mk(arms[1], BOX, '#b7c0d0', [0, -.7, .1], [.04, .3, .02])}
+            if (c.cls === 'star') {const w = arms[1]; mk(w, CYL, '#ff8ac8', [0, .2, .1], [.05, .9, .05]); for (const a of [0, .78]) {const q = mk(w, BOX, '#ffe36b', [0, .75, .1], [.3, .3, .05], 0); q.e = [.6, .5, 0]; q.r[2] = a} mk(w, SPH, '#ff4fa8', [0, .75, .12], [.12, .12, .12], 0).e = [.6, .1, .3]; mk(body, SPH, '#ff4fa8', [0, 1.4, .25], [.2, .12, .08], 0)}
+            if (c.cls === 'archer') {for (const d of [-1, 1]) mk(head, CONE, c.skin, [d * .5, .02, 0], [.09, .32, .09], 0).r[2] = -d * 1.35; mk(arms[0], MOON, '#7a4a22', [0, -.1, .35], [1.2, 1.2, 1.2], 0).r[2] = Math.PI / 2; mk(body, CYL, '#6a4a2a', [.15, 1.2, -.3], [.14, .7, .14]).r[2] = .3}
+            if (c.cls === 'star') mk(body, CONE, '#ff7ac0', [0, .55, 0], [.85, .5, .85]).e = [.15, .03, .1];
+            if (c.cls === 'samurai') mk(body, BOX, '#8a1f2a', [0, .55, -.22], [.68, .75, .08]);
+            if (c.cls === 'ninja') mk(body, CYL, '#8a96a6', [0, .8, 0], [.7, .05, .5], 0);
+            return {root, body, arms, legs, head, cape: capeN, cls: c.cls}
+        }
+        function anim(ch, t, mv, off = 0) {
+            const w = Math.sin(t * 10 + off) * .75 * mv; ch.legs[0].r[0] = w; ch.legs[1].r[0] = -w; ch.arms[0].r[0] = -w * .8; ch.arms[1].r[0] = w * .8; ch.body.p[1] = Math.abs(w) * .1 + Math.sin(t * 2 + off) * .015; ch.cape.r[0] = .15 + mv * .4 + Math.sin(t * 3 + off) * .04; ch.head.r[2] = Math.sin(t * 1.5 + off) * .04; ch.head.r[0] = Math.sin(t * 2 + off) * .03; const k = ch.cls, I = 1 - Math.min(1, mv);
+            if (k === 'star') {ch.body.p[1] += .18 + Math.sin(t * 3 + off) * .07; ch.legs[0].r[0] *= .3; ch.legs[1].r[0] = ch.legs[0].r[0] * .5 + .35}
+            else if (k === 'ninja') {ch.body.r[0] = .12 + mv * .3; ch.legs[0].r[0] *= 1.3; ch.legs[1].r[0] *= 1.3}
+            else if (k === 'samurai') {ch.body.r[1] = Math.sin(t * 1.2 + off) * .05 * I; if (!mv) ch.arms[1].r[0] = -.7 + Math.sin(t * 2) * .05}
+            else if (k === 'archer') {if (!mv) ch.arms[0].r[0] = -1.1 + Math.sin(t * 2) * .03; ch.body.p[1] += Math.sin(t * 2 + off) * .01}
+            else if (k === 'mage') {if (!mv) ch.arms[1].r[0] = Math.sin(t * 1.6) * .12 - .15}
+            else if (k === 'warrior') {if (!mv) ch.body.r[0] = Math.sin(t * 1.4) * .02}
+        }
+
+        /* ===== Mundo: Axel ===== */
+        S3(BOX, '#74b552', [0, -.3, 0], [240, .6, 240]).gr = 1; S3(CYL, '#d8c9a3', [0, .03, 0], [12, .08, 12]); S3(CYL, '#bfae84', [0, .06, 0], [9, .08, 9]);
+        for (const [x, z, w, d] of [[0, 28, 4, 36], [0, -28, 4, 36], [28, 0, 36, 4], [-28, 0, 36, 4]]) S3(BOX, '#cdb98e', [x, .02, z], [w, .06, d]);
+        S3(CYL, '#aab4c4', [0, .4, 0], [2.8, .8, 2.8]); S3(CYL, '#5fd0ff', [0, .78, 0], [2.4, .08, 2.4]).e = [.1, .35, .45]; S3(CYL, '#cfd8e6', [0, 1.5, 0], [.4, 2, .4]); S3(SPH, '#6fd3f2', [0, 2.6, 0], [.45, .45, .45]).e = [.2, .5, .6];
+        function house(x, z, w, d, wc, rc, f = 1, h = 3) {S3(BOX, wc, [x, h / 2, z], [w, h, d]); const r = (Math.max(w, d) / 2 + .5) * 1.41; const rf = S3(PYR, rc, [x, h + r * .45, z], [r, r * .9, r]); rf.r[1] = Math.PI / 4; S3(BOX, '#6b4a2a', [x, 1, z + f * (d / 2 + .02)], [1.2, 2, .1]); for (const s of [-1, 1]) S3(BOX, '#ffe9a0', [x + s * w * .3, 1.8, z + f * (d / 2 + .02)], [.9, .8, .1]).e = [.4, .35, .1]}
+        house(0, -18, 11, 7, '#e9dcc0', '#b83d3d', 1, 4); S3(BOX, '#8a5a2b', [0, 3.6, -14.4], [5, .8, .15]);
+        for (const [x, z, f] of [[-17, -9, 1], [17, -10, 1], [-18, 8, -1], [18, 9, -1], [-9, 17, -1], [10, 18, -1]]) house(x, z, 6, 5, pick(['#f0e4c8', '#e3cfae', '#d8e3ef']), pick(['#3d6fb8', '#b8573d', '#4a8a52']), f);
+        for (let i = 0; i < 70; i++) {const x = rnd(-95, 95), z = rnd(-95, 95); if (Math.hypot(x, z) < 23) continue; const s = rnd(.8, 1.4); S3(CYL, '#7a5230', [x, 1.1 * s, z], [.3 * s, 2.2 * s, .3 * s]); S3(SPH, '#3f9a4a', [x, 3 * s, z], [1.6 * s, 1.5 * s, 1.6 * s]); S3(SPH, '#5fbf5e', [x + .4 * s, 3.9 * s, z], [1.1 * s, 1 * s, 1.1 * s])}
+        for (let i = 0; i < 300; i++) {const x = rnd(-90, 90), z = rnd(-90, 90); if (Math.hypot(x, z) < 11) continue; for (let j = 0; j < 3; j++) {const h = rnd(.5, 1.1), n = S3(CONE, pick(['#4f9a3a', '#68b74a', '#3f8a34', '#7cc457']), [x + rnd(-.3, .3), h / 2, z + rnd(-.3, .3)], [.1, h, .1]); n.r[2] = rnd(-.35, .35); n.r[0] = rnd(-.35, .35)} }
+        for (let i = 0; i < 170; i++) {const x = rnd(-80, 80), z = rnd(-80, 80); if (Math.hypot(x, z) < 10) continue; S3(SPH, pick(['#fff', '#ffd1e8', '#ffe36b', '#c9a0ff']), [x, .1, z], [.12, .1, .12])}
+        for (let i = 0; i < 8; i++) {const a = i * Math.PI / 4, x = Math.cos(a) * 8.4, z = Math.sin(a) * 8.4; S3(CYL, '#4a3a2a', [x, 1, z], [.07, 2, .07]); S3(SPH, '#ffe08a', [x, 2.1, z], [.22, .22, .22]).e = [.8, .65, .2]}
+        const clouds = []; for (let i = 0; i < 10; i++) {const c = put(new N(SPH, '#fff', [rnd(-140, 140), rnd(50, 65), rnd(-140, 140)], [rnd(7, 12), 2.4, rnd(4, 6)])); c.e = [.25, .25, .28]; c.nf = 1; clouds.push(c)}
+        const sun = put(new N(SPH, '#fff6c8', [-70, 85, -140], [9, 9, 9])); sun.e = [1, .9, .5]; sun.nf = 1;
+
+        /* ===== Estado del héroe ===== */
+        const H = {
+            st: {str: 0, vit: 0, agi: 0, int: 0}, sp: 0, p: [0, 0, 7], face: Math.PI, hp: 100, mhp: 100, mp: 100, mmp: 100, lv: 1, xp: 0, xr: 100, sk: 1, pts: 0, eris: 0, cd: 0, hcd: 0, ucd: 0, ex: 0, cast: 0, sw: 0, dead: 0,
+            o: {h: 1, w: 1, skin: '#f2bf9c', hair: '#6b4a2f', armor: '#3f7a5c', pants: '#35405a', trim: '#e8c25a', eye: '#2d7fd6', hat: 'none', cape: 'none', cls: 'mage'}
+        };
+        function build() {if (H.ch) rem(H.ch.root); const o = H.o; const XF = {samurai: {pony: 1}, ninja: {pony: 1}, star: {tails: 1}, archer: {long: 1}}[o.cls] || {}; H.ch = chibi({...XF, ...o, cape: o.cape === 'none' ? 0 : o.cape}); H.ch.root.p = H.p; put(H.ch.root); H.ch.root.s = [o.w, o.h, o.w]; stats()}
+        function stats() {const c = H.o.cls, m = c === 'mage', s = H.st; const BS = {mage: [100, 90], warrior: [60, 140], shadow: [80, 110], samurai: [60, 125], ninja: [75, 100], star: [95, 95], archer: [70, 105]}[c]; H.mmp = BS[0] + 6 * (H.lv - 1) + 6 * s.int; H.mhp = BS[1] + 12 * (H.lv - 1) + 10 * s.vit; H.hp = Math.min(H.hp, H.mhp); H.mp = Math.min(H.mp, H.mmp); const L = {mage: ['Explosión [Q]', 'Rayo en cadena [R]'], warrior: ['Golpe sísmico [Q]', 'Torbellino [R]'], shadow: ['¡ARISE! [Q]', 'Paso sombra [R]'], samurai: ['Iaido Lunar [Q]', 'Ráfaga de Tajos [R]'], ninja: ['Jutsu: Clones [Q]', 'Tormenta Shuriken [R]'], star: ['Rayo Estelar [Q]', 'Corazones Prisma [R]'], archer: ['Flecha Celestial [Q]', 'Lluvia de Flechas [R]']}[c]; $('#b2').textContent = L[0]; $('#b5').textContent = L[1]}
+        const dmgB = () => (14 + 4 * H.lv + 2 * H.sk) * (1 + .06 * H.st.str), dmgU = () => (H.o.cls === 'mage' ? 95 + 35 * H.sk + 10 * H.lv : 70 + 28 * H.sk + 8 * H.lv) * (1 + .05 * H.st.int), lvS = () => 1 + .1 * (H.lv - 1), radU = () => ((H.o.cls === 'mage' ? 7 : 5.5) + .6 * (H.sk - 1)) * lvS(), cost = () => H.o.cls === 'mage' ? Math.round(H.mmp * .8) : H.o.cls === 'shadow' ? 40 : 30;
+        build();
+
+        /* ===== Efectos ===== */
+        const Pt = [], Tk = [], enemies = [], projs = [], coins = [], fls = [], shadows = []; let shake = 0;
+        function spark(p, v, c, s, l, g = 6) {const n = put(new N(SPH, c, p.slice(), [s, s, s])); n.e = hx(c).map(x => x * .8); Pt.push({n, v, l, L: l, g, s})}
+        function fxT(n, d, f, fin) {Tk.push({n, d, t: 0, f, fin})}
+        function flash(a = .8) {const f = $('#flash'); f.style.transition = 'none'; f.style.opacity = a; requestAnimationFrame(() => {f.style.transition = 'opacity .7s'; f.style.opacity = 0})}
+        function burst(p, cols, n, sp, s = .12, l = .9) {for (let i = 0; i < n; i++) {const a = rnd(0, 6.28), u = rnd(.2, 1); spark(p, [Math.cos(a) * sp * u, rnd(1, sp), Math.sin(a) * sp * u], pick(cols), s * rnd(.6, 1.4), l * rnd(.6, 1.2))} }
+        function ringFx(c, col, e, r, d, y = .15) {const n = put(new N(RING, col, [c[0], y, c[2]], [1, 1, 1])); n.e = e; fxT(n, d, (k, n) => {const s = r * (.2 + k * 1); n.s = [s, 1, s]; n.a = 1 - k}); return n}
+        let cin = 0, T0 = 0, pull = 0, pv = 0; const PUR = () => H.lv >= 5, purp = n => {if (n.c[0] > n.c[1] && n.c[0] > n.c[2]) n.c = [n.c[0] * .7 + n.c[1] * .15, n.c[1] * .3, Math.min(1, n.c[2] * .4 + n.c[0] * .9)]; if (n.e[0] > n.e[1] && n.e[0] > n.e[2]) n.e = [n.e[0] * .7 + n.e[1] * .15, n.e[1] * .3, Math.min(1, n.e[2] * .4 + n.e[0] * .9)]; n.k.forEach(purp)}; const SB = [.52, .78, .96], SD = [.17, .03, .1];
+        function lit(n, on) {if (on) {n._e = n.e; n.e = PUR() ? [.55, .3, .85] : [.8, .62, .2]} else if (n._e) n.e = n._e; n.k.forEach(k => lit(k, on))}
+        function cosmos() {
+            T0 = roots.length; if (PUR()) {SD[0] = .12; SD[1] = .03; SD[2] = .22} else {SD[0] = .17; SD[1] = .03; SD[2] = .1} const X = H.p[0], Z = H.p[2], D = 1.75, cols = ['#43e8ff', '#ff4ad8', '#5dff8a', '#fff06a', '#ffffff']; lit(H.ch.root, 1);
+            for (let i = 0; i < 5; i++) {const r = (9 + i * 4.5) * lvS(), n = put(new N(RING, i % 2 ? '#ffb340' : '#ff5a14', [X, 8 + i * 2.2, Z], [r, 1, r])); n.r[0] = .25 - i * .1; n.e = [1, .45, .05]; n.a = .9; fxT(n, D, (k, n) => {n.r[1] = k * (i % 2 ? -4 : 4) + i; n.a = Math.max(.01, Math.min(1, k * 6) * .9 * (k > .9 ? (1 - k) * 10 : 1))})}
+            for (let i = 0; i < 12; i++) {const n = put(new N(BOX, i % 2 ? '#ff7a1a' : '#ffd36b', [X + rnd(-40, 40), rnd(1, 14), Z + rnd(-40, 40)], [rnd(30, 80), .12, .12])); n.r[1] = rnd(0, 3.14); n.e = [1, .5, .1]; fxT(n, D, (k, n) => {n.p[0] += .3 * (i % 2 ? 1 : -1); n.a = Math.max(.01, Math.sin(k * 3.14))})}
+            for (let i = 0; i < 8; i++) {const n = put(new N(CYL, '#ff2a1a', [X, 14, Z], [1.5, 32, 1.5])); n.e = [.9, .1, .05]; n.a = .4; const R = 6 + (i % 3) * 3, a0 = i * .78; fxT(n, D, (k, n) => {const a = a0 + k * (i % 2 ? -3 : 3); n.p[0] = X + Math.cos(a) * R; n.p[2] = Z + Math.sin(a) * R; n.a = .35 * Math.min(1, k * 4) + .01})}
+            for (let i = 0; i < 7; i++) {const a = rnd(0, 6.28), r = rnd(12, 30), g = put(new N(null, 0, [X + Math.cos(a) * r, rnd(4, 24), Z + Math.sin(a) * r])), c = ['#43e8ff', '#5dff8a', '#fff06a', '#ff9ae8'][i % 4], sz = rnd(1.6, 3.2) * lvS(); g.r[1] = Math.atan2(X - g.p[0], Z - g.p[2]); const m = g.add(new N(MOON, c, [0, 0, 0], [1, 1, 1])); m.r[0] = Math.PI / 2; m.e = hx(c); fxT(g, D, (k, n) => {const s = sz * Math.min(1, k * 4); n.s = [s, s, s]; n.r[2] = i + k * (i % 2 ? 2 : -2)})}
+            for (let i = 0; i < 10; i++) {const a = rnd(0, 6.28), r = rnd(6, 22), n = put(new N(BOX, '#1c0b3a', [X + Math.cos(a) * r, rnd(2, 18), Z + Math.sin(a) * r], [rnd(40, 70), .3, .3])), sg = i % 2 ? 1 : -1; n.e = [.22, .08, .45]; n.r[1] = rnd(0, 3.14); n.r[2] = rnd(-.6, .6); fxT(n, D, (k, n) => {n.p[0] += Math.sin(n.r[1]) * .4 * sg; n.p[2] += Math.cos(n.r[1]) * .4 * sg; n.a = Math.max(.01, Math.sin(k * 3.14) * .9)})}
+            for (let i = 0; i < 16; i++) {const a = rnd(0, 6.28), r = rnd(5, 26), c = pick(['#43e8ff', '#ffffff', '#5dff8a', '#ff4ad8']), n = put(new N(BOX, c, [X + Math.cos(a) * r, rnd(1, 20), Z + Math.sin(a) * r], [rnd(10, 34) * lvS(), .1, .1])), sp = rnd(.6, 1.4) * (i % 2 ? 1 : -1); n.e = hx(c); n.r[1] = rnd(0, 3.14); n.r[2] = rnd(-.9, .9); fxT(n, D, (k, n) => {n.p[0] += Math.cos(n.r[1]) * sp; n.p[2] -= Math.sin(n.r[1]) * sp; n.a = Math.max(.01, Math.sin(Math.min(1, k * 1.2) * 3.14))})}
+            for (let i = 0; i < 9; i++) {const a = rnd(0, 6.28), r = rnd(10, 30), g = put(new N(null, 0, [X + Math.cos(a) * r, rnd(3, 22), Z + Math.sin(a) * r])), c = pick(['#43e8ff', '#ff4ad8', '#ffd36b', '#5dff8a']), sz = rnd(1, 2.2) * lvS(); g.r[1] = Math.atan2(X - g.p[0], Z - g.p[2]); const rg = g.add(new N(RING, c, [0, 0, 0], [1, 1, 1])); rg.r[0] = Math.PI / 2; rg.e = hx(c); for (let j = 0; j < 3; j++) {const b = g.add(new N(BOX, c, [0, 0, 0], [1.7, .06, .06])); b.r[2] = j * 1.05; b.e = hx(c)} fxT(g, D, (k, n) => {const s = sz * Math.min(1, k * 4); n.s = [s, s, s]; n.r[2] = k * (i % 2 ? 4 : -4)})}
+            for (let i = 0; i < 6; i++) {const a = rnd(0, 6.28), r = rnd(10, 24), g = put(new N(null, 0, [X + Math.cos(a) * r, rnd(5, 18), Z + Math.sin(a) * r])), sz = rnd(3, 5.5) * lvS(); g.r[1] = Math.atan2(X - g.p[0], Z - g.p[2]); for (const [w, h] of [[1, .1], [.1, 1], [.6, .6]]) {const b = g.add(new N(BOX, '#ffffff', [0, 0, 0], [w, h, .05])); b.e = [1, 1, 1]; if (w === .6) b.r[2] = .78} fxT(g, D, (k, n) => {const s = sz * Math.min(1, k * 5) * (.5 + .5 * Math.abs(Math.sin(k * 16 + i))); n.s = [s, s, s]})}
+            for (let i = 0; i < 70; i++) {
+                const a = rnd(0, 6.28), r = rnd(8, 34), g = put(new N(null, 0, [X + Math.cos(a) * r, rnd(1, 26), Z + Math.sin(a) * r])), c = pick(cols), sz = rnd(.4, 1.2) * lvS(); g.r[1] = Math.atan2(X - g.p[0], Z - g.p[2]); g.r[2] = rnd(0, 1);
+                for (const [w, h] of [[1, .12], [.12, 1]]) {const b = g.add(new N(BOX, c, [0, 0, 0], [w, h, .05])); b.e = hx(c)}
+                fxT(g, D, (k, n) => {const s = sz * Math.min(1, k * 5) * (.6 + .4 * Math.sin(k * 28 + i)); n.s = [s, s, s]})
+            }
+            for (let i = 0; i < 120; i++) {const a = rnd(0, 6.28), r = rnd(4, 30); spark([X + Math.cos(a) * r, rnd(.5, 22), Z + Math.sin(a) * r], [0, rnd(-.4, .4), 0], pick(cols), .14, D, 0)}
+        }
+        function boomP(c, rad, dmg) {
+            ts = .12; const X = c[0], Z = c[2];
+            const core = put(new N(SPH, '#f3e1ff', [X, rad * .3, Z], [1, 1, 1])); core.e = [.8, .6, 1]; core.a = .95; fxT(core, .8, (k, n) => {const s = rad * (.3 + k); n.s = [s, s, s]; n.p[1] = s * .6; n.a = Math.max(.01, .95 * (1 - k * k))});
+            const dome = put(new N(SPH, '#8a3cff', [X, 0, Z], [1, 1, 1])); dome.e = [.4, .12, .8]; fxT(dome, 1.2, (k, n) => {const s = rad * (.4 + k * 1.7); n.s = [s, s * .8, s]; n.a = Math.max(.01, .5 * (1 - k))});
+            for (let i = 0; i < 10; i++) {const n = put(new N(RING, i % 2 ? '#c78bff' : '#7a2cff', [X, .3 + i * rad * .28, Z], [1, 1, 1])); n.e = i % 2 ? [.6, .3, 1] : [.3, .1, .9]; n.r[0] = (i % 3 - 1) * .22; fxT(n, 1.1 + i * .12, (k, n) => {const s = rad * (.3 + k * (1.3 + i * .2)); n.s = [s, 1, s]; n.r[1] = k * (i % 2 ? 3 : -3); n.a = Math.max(.01, .95 * (1 - k))})}
+            for (let i = 0; i < 4; i++) {const n = put(new N(RING, '#e8c9ff', [X, rad * .5, Z], [1, 1, 1])); n.e = [.8, .5, 1]; n.r[0] = Math.PI / 2; n.r[1] = i * .79; fxT(n, 1.3, (k, n) => {const s = rad * (.4 + k * 1.7); n.s = [s, 1, s]; n.a = Math.max(.01, 1 - k)})}
+            const pl = put(new N(CYL, '#c78bff', [X, 10, Z], [1, 20, 1])); pl.e = [.6, .3, 1]; fxT(pl, 1, (k, n) => {const s = rad * .5 * (1 - k); n.s = [s, 20, s]; n.a = Math.max(.01, .8 * (1 - k))});
+            ringFx(c, '#c9a8ff', [.5, .3, .9], rad * 3.6, 1.6, .3); ringFx(c, '#fff', [1, 1, 1], rad * 2.6, .5, .2);
+            const cr = put(new N(CYL, '#1d0f33', [X, .1, Z], [rad * 1.1, .04, rad * 1.1])); fxT(cr, 14, (k, n) => n.a = Math.max(.01, 1 - k));
+            burst([X, .8, Z], ['#c78bff', '#8a3cff', '#fff', '#43e8ff'], 100, rad * 3, .16, 1.8);
+            for (let i = 0; i < 14; i++) {const n = put(new N(BOX, '#ffffff', [X, 2, Z], [.25, .25, rad * 3])); n.r[1] = i * .45; n.e = [.8, .6, 1]; fxT(n, .6, (k, n) => {n.a = Math.max(.01, 1 - k); n.s[0] = .25 * (1 - k)})}
+            enemies.slice().forEach(e => {const d = Math.hypot(e.p[0] - X, e.p[2] - Z); if (d < rad + e.r) hitE(e, dmg * (1 - d / (rad + e.r) * .35), (e.p[0] - X) / (d || 1) * 14, (e.p[2] - Z) / (d || 1) * 14)})
+        }
+        function boom2(c, rad) {
+            ts = .12; const X = c[0], Z = c[2];
+            const core = put(new N(SPH, '#fff7d0', [X, rad * .3, Z], [1, 1, 1])); core.e = [1, .95, .7]; core.a = .95; fxT(core, .9, (k, n) => {const s = rad * (.3 + k * 1.25); n.s = [s, s * .85, s]; n.p[1] = s * .5; n.a = Math.max(.01, .95 * (1 - k * k)); n.e = [1, .95 - k * .5, .7 - k * .6]});
+            const dome = put(new N(SPH, '#ff8a1e', [X, 0, Z], [1, 1, 1])); dome.e = [.9, .35, .05]; fxT(dome, 1.2, (k, n) => {const s = rad * (.4 + k * 1.7); n.s = [s, s * .8, s]; n.a = Math.max(.01, .6 * (1 - k))});
+            for (let i = 0; i < 12; i++) {const n = put(new N(BOX, '#fff0a0', [X, 2, Z], [.3, .3, rad * 2.8])); n.r[1] = i * .52; n.r[0] = rnd(-.5, .5); n.e = [1, .9, .5]; fxT(n, .6, (k, n) => {n.a = Math.max(.01, 1 - k); n.s[0] = .3 * (1 - k)})}
+            ringFx(c, '#d9c19a', [.3, .25, .15], rad * 3.4, 1.4, .3); ringFx(c, '#fff', [1, 1, 1], rad * 2.6, .5, .2);
+            const st = put(new N(CYL, '#ff7a1a', [X, 1, Z], [1, 1, 1])); st.e = [.8, .3, .04]; st.a = .85; fxT(st, 2, (k, n) => {const h = 2 + k * rad * 1.6, w = rad * .35 * (1 - k * .3); n.s = [w, h, w]; n.p[1] = h / 2; n.a = Math.max(.01, .85 * (1 - k * k))});
+            for (let i = 0; i < 14; i++) {const cap = i > 6, n = put(new N(SPH, i < 5 ? '#ff9a2a' : '#3b2a26', [X, 1, Z], [1, 1, 1])); n.e = i < 5 ? [.9, .4, .05] : [.05, .03, .02]; n.a = .85; fxT(n, 2.6, (k, n) => {const q = Math.max(0, k - i * .02), sp = rad * .35 * q * (cap ? 1.5 : .4); n.p[0] = X + Math.cos(i * 2.4) * sp; n.p[2] = Z + Math.sin(i * 2.4) * sp; n.p[1] = 1 + q * (7 + i * .7); const s = rad * (.25 + q * .45) * (cap ? 1.35 : 1); n.s = [s, s * .8, s]; n.a = Math.max(.01, .85 * (1 - k * k))})}
+            burst([X, .8, Z], ['#fff0a0', '#ffb52e', '#ff6b0b'], 80, rad * 3, .14, 2)
+        }
+        function boom(c, rad, dmg) {
+            flash(1); pull = 1; shake = 2; if (PUR()) {boomP(c, rad, dmg); return } boom2(c, rad);
+            const pl = put(new N(CYL, '#ffd27a', [c[0], 7, c[2]], [1, 14, 1])); pl.e = [1, .6, .15]; fxT(pl, .8, (k, n) => {const s = rad * .6 * (1 - k); n.s = [s, 14, s]; n.a = .8 * (1 - k) + .01});
+            for (let i = 0; i < 3; i++)ringFx(c, i % 2 ? '#ff7a1a' : '#ffd36b', [1, .4, 0], rad * 2.2 * (1 + i * .12), .7 + i * .15);
+            for (let i = 0; i < 9; i++) {const n = put(new N(SPH, i % 2 ? '#ff5a14' : '#ffb340', [c[0] + rnd(-1, 1), 1, c[2] + rnd(-1, 1)], [1, 1, 1])); n.e = [.9, .35, .05]; n.a = .9; fxT(n, 1.8, (k, n) => {n.p[1] = 1 + k * (6 + i * .8); const s = rad * .3 * (1 + k * .9) * (1 - i * .05); n.s = [s, s, s]; n.a = .9 * (1 - k) + .01})}
+            const cr = put(new N(CYL, '#2b1c16', [c[0], .1, c[2]], [rad * 1.1, .04, rad * 1.1])); fxT(cr, 14, (k, n) => n.a = Math.max(.01, 1 - k));
+            burst([c[0], .5, c[2]], ['#ff3108', '#ff6b0b', '#ffb52e', '#fff0a0'], 110, rad * 2.2, .2, 1.6);
+            for (let i = 0; i < 22; i++) {const n = put(new N(BOX, '#5a4636', [c[0], .4, c[2]], [.3, .3, .3])); Pt.push({n, v: [rnd(-9, 9), rnd(6, 16), rnd(-9, 9)], l: 1.8, L: 1.8, g: 20, s: .3, rot: 1})}
+            enemies.slice().forEach(e => {const d = Math.hypot(e.p[0] - c[0], e.p[2] - c[2]); if (d < rad + e.r) hitE(e, dmg * (1 - d / (rad + e.r) * .35), (e.p[0] - c[0]) / (d || 1) * 14, (e.p[2] - c[2]) / (d || 1) * 14)});
+            const hd = Math.hypot(H.p[0] - c[0], H.p[2] - c[2]); if (hd < rad) toast('La onda expansiva te sacude… ¡pero eres inmune al hechizo propio!')
+        }
+
+        /* ===== Combate ===== */
+        const nearest = (r) => {let b = null, bd = r; for (const e of enemies) {const d = Math.hypot(e.p[0] - H.p[0], e.p[2] - H.p[2]); if (d < bd) {bd = d; b = e} } return b};
+        function aim() {const e = nearest(18); if (e) H.face = Math.atan2(e.p[0] - H.p[0], e.p[2] - H.p[2]); return [Math.sin(H.face), Math.cos(H.face)]}
+        function busy() {return dlgOpen || H.cast > 0 || H.ex > 0 || H.dead}
+        function basic() {
+            if (busy() || H.cd > 0) return; const d = aim(); H.cd = .45 / (1 + .04 * H.st.agi); H.sw = .25;
+            if (['ninja', 'star', 'archer'].includes(H.o.cls)) {const k = H.o.cls, cl = {ninja: '#cfd8ff', star: '#ff7ad0', archer: '#d8ffb0'}[k], n = put(new N(k === 'archer' ? BOX : SPH, cl, [H.p[0] + d[0], 1.4, H.p[2] + d[1]], k === 'archer' ? [.08, .08, 1.1] : [.3, .3, .3])); n.e = hx(cl).map(x => x * .7); n.r[1] = H.face; projs.push({n, v: [d[0] * 28, d[1] * 28], l: 1.2, dmg: dmgB() * (k === 'archer' ? 1.3 : 1)})}
+            else if (H.o.cls === 'mage') {const n = put(new N(SPH, '#ff7a2a', [H.p[0] + d[0], 1.4, H.p[2] + d[1]], [.3, .3, .3])); n.e = [1, .45, .05]; projs.push({n, v: [d[0] * 22, d[1] * 22], l: 1.2, dmg: dmgB()})}
+            else {
+                const sd = H.o.cls === 'shadow', n = put(new N(BOX, sd ? '#9a6bff' : '#fff', [H.p[0] + d[0] * 1.6, 1.2, H.p[2] + d[1] * 1.6], [3.2, .06, .35])); n.e = sd ? [.5, .3, 1] : [1, 1, 1]; n.r[1] = H.face + 1.2; fxT(n, .2, (k, n) => {n.r[1] = H.face + 1.2 - k * 2.4; n.a = 1 - k * .9});
+                burst([H.p[0] + d[0] * 2, 1.2, H.p[2] + d[1] * 2], ['#fff', '#cfe6ff'], 6, 5, .08, .3);
+                enemies.slice().forEach(e => {const dx = e.p[0] - H.p[0], dz = e.p[2] - H.p[2], dd = Math.hypot(dx, dz); if (dd < 3.4 + e.r && Math.cos(Math.atan2(dx, dz) - H.face) > .3) hitE(e, dmgB() * 1.2, dx / dd * 7, dz / dd * 7)})
+            }
+        }
+        function ult() {
+            if (busy() || H.ucd > 0) return; const c = cost(); if (H.mp < c) {toast('Maná insuficiente…'); return } const rad = radU(), dm = dmgU();
+            if (H.o.cls === 'mage') {
+                const t = nearest(22), d = aim(); const tx = t ? t.p[0] : H.p[0] + d[0] * 9, tz = t ? t.p[2] : H.p[2] + d[1] * 9; H.cast = 1.7; H.mp -= c; cosmos();
+                const g = put(new N(null, 0, [tx, .12, tz])); for (let i = 0; i < 3; i++) {const r = g.add(new N(RING, i % 2 ? '#ff6b13' : '#ffca42', [0, i * .03, 0], [rad * (.5 + i * .25), 1, rad * (.5 + i * .25)])); r.e = [.9, .3, .02]}
+                const vc = put(new N(null, 0, [H.p[0] + d[0] * 2.4, 2.1, H.p[2] + d[1] * 2.4])); vc.r[1] = H.face; vc.r[0] = Math.PI / 2; for (let i = 0; i < 3; i++) {const r = vc.add(new N(RING, i % 2 ? '#ffca42' : '#ff6b13', [0, i * .02, 0], [1.9 - i * .5, 1, 1.9 - i * .5])); r.e = [.95, .4, .05]} for (let i = 0; i < 12; i++) {const a = i * Math.PI / 6, r = vc.add(new N(BOX, '#fff0a0', [Math.cos(a) * 1.25, .04, Math.sin(a) * 1.25], [.12, .03, .4])); r.r[1] = -a; r.e = [1, .8, .3]}
+                fxT(vc, 1.7, (k, n) => {const s = Math.min(1, k * 4) * lvS(); n.s = [s, s, s]; n.k.forEach((r, i) => {if (i < 3) r.r[1] = k * (i % 2 ? -10 : 10)})});
+                for (let i = 0; i < 20; i++) {const a = i * Math.PI / 10, r = g.add(new N(BOX, i % 2 ? '#ff4b0b' : '#ffe28a', [Math.cos(a) * rad * .62, .05, Math.sin(a) * rad * .62], [.18, .04, .8])); r.r[1] = -a; r.e = [.9, .35, .02]}
+                fxT(g, 1.7, (k, n) => {n.r[1] = k * 7; const s = .2 + k * .8; n.s = [s, 1, s]; if (Math.random() < .7) spark([tx + rnd(-rad, rad) * .7, .2, tz + rnd(-rad, rad) * .7], [0, rnd(3, 7), 0], PUR() ? pick(['#c78bff', '#8a3cff']) : pick(['#ffb340', '#ff6b0b']), .12, .9, -2)}, () => {lit(H.ch.root, 0); boom([tx, 0, tz], rad, dm); H.ex = 3.8; H.mp = 0; $('#chant').style.display = 'none'; toast('Maná agotado… Megumin estaría orgullosa.')});
+                if (PUR()) roots.slice(T0).forEach(purp); H.chant = ['Oh, oscuridad más negra que la noche…', 'Carmesí que ardes en el abismo, ¡escucha mi llamada!', '¡EXPLOSIÓN!']; $('#chant').style.display = 'block'
+            }
+            else if (H.o.cls === 'shadow') arise(c); else if (H.o.cls !== 'warrior') animeUlt(c);
+            else {
+                H.mp -= c; H.ucd = 6; H.sw = .25; shake = .8; ringFx(H.p, '#ffe28a', [.8, .7, .3], rad * 2.2, .6); ringFx(H.p, '#fff', [.9, .9, .9], rad * 1.4, .45);
+                for (let i = 0; i < 12; i++) {const a = i * Math.PI / 6, n = put(new N(BOX, '#2b1c16', [H.p[0] + Math.cos(a) * rad * .5, .1, H.p[2] + Math.sin(a) * rad * .5], [.25, .05, rad * .8])); n.r[1] = -a; fxT(n, 6, (k, n) => n.a = Math.max(.01, 1 - k))}
+                burst([H.p[0], .3, H.p[2]], ['#c9a46a', '#8a6f4a', '#fff'], 60, rad * 1.4, .2, 1);
+                enemies.slice().forEach(e => {const dx = e.p[0] - H.p[0], dz = e.p[2] - H.p[2], d = Math.hypot(dx, dz); if (d < rad + e.r) hitE(e, dm, dx / (d || 1) * 16, dz / (d || 1) * 16)})
+            }
+        }
+        function heal() {
+            if (busy() || H.hcd > 0) return; if (H.mp < 25) {toast('Maná insuficiente…'); return } H.mp -= 25; H.hcd = 6; const a = Math.round(H.mhp * .35); H.hp = Math.min(H.mhp, H.hp + a); float('+' + a, [H.p[0], 3, H.p[2]], '#7dffb0');
+            for (let i = 0; i < 3; i++) {const r = ringFx(H.p, '#8fe8ff', [.2, .5, .6], 4, .8 + i * .2, .1 + i * .8); r.p = H.p} burst([H.p[0], .2, H.p[2]], ['#8fe8ff', '#fff', '#b6ffd9'], 40, 3, .1, 1.3); toast('«¡Bendición de Aqua!»')
+        }
+        function hitE(e, dm, kx, kz) {e.hp -= dm; e.fl = .15; e.kv = [kx, kz]; glow(e.n, 1); float(Math.round(dm), [e.p[0], 2.4 * e.sc, e.p[2]], '#ffe06b'); if (e.hp <= 0) kill(e)}
+        function glow(n, on) {n.e = on ? [.6, .6, .6] : n.be.slice(); n.k.forEach(k => glow(k, on))}
+        function kill(e) {
+            burst([e.p[0], .8, e.p[2]], ['#7dd16b', '#b6f08a', '#fff'], 26, 6, .16, .8); rem(e.n); enemies.splice(enemies.indexOf(e), 1);
+            for (let i = 0; i < (e.boss ? 12 : rnd(2, 5)); i++) {const c = put(new N(CYL, '#ffd23b', [e.p[0], .7, e.p[2]], [.28, .06, .28])); c.e = [.6, .45, 0]; c.r[0] = Math.PI / 2; coins.push({n: c, v: [rnd(-3, 3), rnd(4, 7), rnd(-3, 3)]})}
+            gain(e.xp || (e.boss ? 150 : 22)); if (H.o.cls === 'shadow' && shadows.length < 10 && Math.random() < (e.boss ? 1 : .2)) {spawnShadow(e.p); toast('[SISTEMA] Sombra extraída.')} const q = Q[qi]; if (q && qs === 1 && q.type === e.type) {qp++; if (qp >= q.n) {qs = 2; toast('¡Misión lista! Vuelve con Liria.')} } hud()
+        }
+        function hurt(d, src) {
+            if (H.dead) return; H.hp -= d; float(d, [H.p[0], 3, H.p[2]], '#ff6b6b'); shake = Math.max(shake, .35); if (Math.random() < .18 && !src.boss) toast('¡El sapo te ha engullido la cabeza! Aqua se ríe a lo lejos…');
+            if (H.hp <= 0) {H.hp = 0; H.dead = 3; toast('Has caído… Aqua te revivirá (pierdes un 10% de Eris).')}
+        }
+        function gain(n) {H.xp += n; while (H.xp >= H.xr) {H.xp -= H.xr; H.lv++; H.xr = Math.round(H.xr * 1.35); H.pts++; H.sp += 3; stats(); H.hp = H.mhp; H.mp = H.mmp; toast('[SISTEMA] ¡Nivel ' + H.lv + '! +3 puntos de estadística y +1 de habilidad.'); flash(.3)} }
+
+        /* ===== Enemigos: sapos gigantes ===== */
+        function toad(boss) {
+            const root = new N(null), b = root.add(new N(null)), sc = boss ? 2.6 : 1;
+            const m = (g, c, p, s, ol = .03) => {const n = b.add(new N(g, c, p, s)); n.o = ol; return n};
+            m(SPH, boss ? '#4f8a3a' : '#6fbf4a', [0, .7, 0], [.9, .65, 1.1]); m(SPH, '#e6e7a8', [0, .55, .35], [.65, .45, .8], 0); m(SPH, boss ? '#4f8a3a' : '#6fbf4a', [0, 1, .8], [.6, .5, .5]);
+            for (const d of [-1, 1]) {m(SPH, '#ffe14a', [d * .38, 1.4, .9], [.2, .2, .2], .02).e = [.3, .25, 0]; m(SPH, '#111', [d * .38, 1.42, 1.07], [.08, .1, .05], 0); m(SPH, boss ? '#4f8a3a' : '#6fbf4a', [d * .8, .3, -.4], [.35, .3, .6])}
+            m(BOX, '#7a2e3a', [0, .85, 1.25], [.7, .05, .1], 0); for (let i = 0; i < 7; i++)m(SPH, boss ? '#35662a' : '#4f9a35', [rnd(-.5, .5), 1.1 + rnd(0, .2), rnd(-.6, .3)], [.13, .09, .13], 0); for (const d of [-1, 1]) m(SPH, boss ? '#4f8a3a' : '#6fbf4a', [d * .55, .2, .7], [.22, .2, .4]); if (boss) {m(CONE, '#ffd23b', [0, 1.9, .4], [.5, .6, .5]).e = [.5, .4, 0]; m(SPH, '#ff4a4a', [0, 2.0, .4], [.1, .1, .1], 0)}
+            root.s = [sc, sc, sc]; const e = {n: root, b, p: root.p, hp: boss ? 520 : 55, r: 1.1 * sc, sc, boss, type: boss ? 'toadking' : 'toad', spd: boss ? 3 : 3.6, dmg: boss ? 16 : 7, cd: rnd(0, 1.5), fl: 0, kv: [0, 0], hop: rnd(0, 6), dir: rnd(0, 6.28), wt: 0, face: 0};
+            let a = rnd(0, 6.28), r = rnd(28, 60); root.p[0] = Math.cos(a) * r; root.p[2] = Math.sin(a) * r; put(root); enemies.push(e)
+        }
+
+        const MT = {wolf: {hp: 90, dmg: 11, spd: 6.4, r: 1, xp: 35, hj: .2, acd: 1.1}, golem: {hp: 280, dmg: 24, spd: 2.2, r: 1.1, xp: 80, hj: .04, acd: 2.2, sc: 1.3}, wraith: {hp: 130, dmg: 16, spd: 4.2, r: .9, xp: 60, hj: .3, hv: 1.3, rg: 5, acd: 1.8}, dullahan: {hp: 900, dmg: 28, spd: 4, r: 1.2, xp: 380, hj: .15, boss: 1, sc: 1.5, acd: 1.4}, colossus: {hp: 1600, dmg: 40, spd: 2.6, r: 1.1, xp: 700, hj: .05, boss: 1, sc: 2.6, acd: 2}};
+        function mob(t) {
+            if (t === 'toad' || t === 'toadking') return toad(t === 'toadking');
+            const m = MT[t], sc = m.sc || 1, root = new N(null), b = root.add(new N(null)), mk = (g, c, p, s, ol = .03) => {const n = b.add(new N(g, c, p, s)); n.o = ol; return n};
+            if (t === 'wolf') {mk(SPH, '#4a4f60', [0, .8, 0], [.55, .5, .95]); mk(SPH, '#5a6075', [0, 1, .8], [.38, .34, .38]); mk(CONE, '#3a3e4c', [0, .95, 1.3], [.16, .3, .16]).r[0] = Math.PI / 2; mk(CONE, '#4a4f60', [0, .9, -1], [.12, .7, .12]).r[0] = -1.9; for (const d of [-1, 1]) {mk(CONE, '#3a3e4c', [d * .2, 1.4, .7], [.1, .28, .1]); mk(SPH, '#ff3030', [d * .16, 1.08, 1.1], [.06, .05, .04], 0).e = [1, .1, .1]; for (const z of [.45, -.45]) mk(BOX, '#3a3e4c', [d * .25, .3, z], [.14, .6, .14])} }
+            else if (t === 'wraith') {const w = mk(CONE, '#5a2fb0', [0, 1, 0], [.9, 1.8, .9]); w.a = .85; w.e = [.15, .05, .35]; mk(SPH, '#241040', [0, 2.1, 0], [.45, .5, .45]); for (const d of [-1, 1]) {mk(SPH, '#ffe36b', [d * .17, 2.12, .38], [.08, .1, .04], 0).e = [1, .9, .3]; mk(CONE, '#5a2fb0', [d * .75, 1.3, .2], [.2, 1, .2]).r[2] = d * .6} }
+            else if (t === 'dullahan') {mk(BOX, '#1c1c2a', [0, 2, 0], [1.3, 1.8, .9]); mk(BOX, '#7a1f3a', [0, 1.6, -.55], [1.3, 2.2, .1]); for (const d of [-1, 1]) {mk(SPH, '#34344f', [d * .85, 2.8, 0], [.45, .35, .45]); mk(BOX, '#1c1c2a', [d * .35, .7, 0], [.5, 1.4, .55]); mk(BOX, '#1c1c2a', [d, 1.9, .2], [.4, 1.5, .4])} mk(SPH, '#7de8ff', [-1, 2.4, .9], [.35, .35, .35], 0).e = [.3, .8, 1]; mk(CONE, '#7de8ff', [-1, 2.9, .9], [.2, .5, .2], 0).e = [.3, .8, 1]; mk(BOX, '#c9c9e0', [1, 2.6, 1.1], [.14, 2, .3]).r[0] = .2}
+            else {const bb = !!m.boss, c1 = bb ? '#5f6b78' : '#7d8794'; mk(BOX, c1, [0, 1.5, 0], [1.5, 1.6, 1]); mk(BOX, '#8d98a6', [0, 2.5, .05], [.8, .7, .7]); mk(SPH, '#59f0ff', [0, 1.6, .52], [.22, .22, .1], 0).e = [.3, .9, 1]; for (const d of [-1, 1]) {mk(BOX, c1, [d * 1.05, 1.6, .1], [.55, 1.6, .55]); mk(BOX, '#6a7380', [d * 1.1, .7, .15], [.8, .8, .8]); mk(BOX, '#6a7380', [d * .45, .5, 0], [.6, 1, .6]); mk(SPH, '#59f0ff', [d * .2, 2.6, .42], [.09, .07, .05], 0).e = [.3, .9, 1]; if (bb) mk(CONE, '#b45cff', [d * .9, 2.7, 0], [.25, .8, .25]).e = [.4, .15, .7]} }
+            root.s = [sc, sc, sc]; (function f(n) {n.be = n.e.slice(); n.k.forEach(f)})(root);
+            const e = {n: root, b, p: root.p, hp: m.hp, r: m.r * sc, sc, boss: !!m.boss, type: t, spd: m.spd, dmg: m.dmg, xp: m.xp, hj: m.hj, hv: m.hv || 0, rg: m.rg, acd: m.acd, cd: rnd(0, 1.5), fl: 0, kv: [0, 0], hop: rnd(0, 6), dir: rnd(0, 6.28), wt: 0, face: 0};
+            const a = rnd(0, 6.28), r = rnd(28, 60); root.p[0] = Math.cos(a) * r; root.p[2] = Math.sin(a) * r; put(root); enemies.push(e)
+        }
+        function rskill() {const c = H.o.cls; c === 'mage' ? chain() : c === 'warrior' ? whirl() : c === 'shadow' ? dash() : animeR()}
+        function bolt(a, b) {let p = a.slice(); for (let i = 1; i <= 6; i++) {const t = i / 6, q = i < 6 ? [a[0] + (b[0] - a[0]) * t + rnd(-.5, .5), a[1] + (b[1] - a[1]) * t + rnd(-.4, .4), a[2] + (b[2] - a[2]) * t + rnd(-.5, .5)] : b.slice(), dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2], L = Math.hypot(dx, dy, dz), n = put(new N(BOX, i % 2 ? '#ffffff' : '#7de8ff', [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2], [.16, .16, L])); n.r[1] = Math.atan2(dx, dz); n.r[0] = -Math.atan2(dy, Math.hypot(dx, dz)); n.e = [.6, .9, 1]; fxT(n, .25, (k, n) => {n.a = Math.max(.01, 1 - k); n.s[0] = n.s[1] = .16 * (1 - k) + .02}); p = q} burst(b, ['#7de8ff', '#fff'], 10, 4, .1, .4)}
+        function chain() {if (busy() || H.rcd > 0) return; if (H.mp < 25) return toast('Maná insuficiente…'); H.mp -= 25; H.rcd = 3; H.sw = .25; aim(); let from = [H.p[0], 1.8, H.p[2]]; const hit = []; for (let n = 0; n < 5 + Math.floor(H.lv / 4); n++) {let b = null, bd = n ? 10 : 18; for (const e of enemies) {if (hit.includes(e)) continue; const d = Math.hypot(e.p[0] - from[0], e.p[2] - from[2]); if (d < bd) {bd = d; b = e} } if (!b) break; hit.push(b); bolt(from, [b.p[0], 1.2, b.p[2]]); from = [b.p[0], 1.2, b.p[2]]; hitE(b, dmgB() * 2, 0, 0)} if (!hit.length) toast('Sin objetivos cerca.')}
+        function whirl() {if (busy() || H.rcd > 0) return; if (H.mp < 20) return toast('Maná insuficiente…'); H.mp -= 20; H.rcd = 4; H.spin = .6; shake = .5; const n = put(new N(BOX, '#fff', [H.p[0], 1.2, H.p[2]], [9, .08, .45])); n.e = [1, 1, 1]; fxT(n, .6, (k, n) => {n.p[0] = H.p[0]; n.p[2] = H.p[2]; n.r[1] = k * 20; n.a = Math.max(.01, 1 - k * k)}); ringFx(H.p, '#fff', [1, 1, 1], 10, .5, .2); burst([H.p[0], 1, H.p[2]], ['#fff', '#cfe6ff', '#ffd36b'], 40, 7, .1, .5); enemies.slice().forEach(e => {const dx = e.p[0] - H.p[0], dz = e.p[2] - H.p[2], d = Math.hypot(dx, dz); if (d < 4.8 + e.r) hitE(e, dmgB() * 2.4, dx / (d || 1) * 10, dz / (d || 1) * 10)})}
+        function dash() {if (busy() || H.rcd > 0) return; if (H.mp < 20) return toast('Maná insuficiente…'); H.mp -= 20; H.rcd = 2.5; const d = aim(), sx = H.p[0], sz = H.p[2], hit = []; for (let i = 0; i <= 9; i++) {const x = sx + d[0] * i, z = sz + d[1] * i; burst([x, 1, z], ['#7a3cff', '#b49cff'], 4, 2, .14, .5); for (const e of enemies.slice()) if (!hit.includes(e) && Math.hypot(e.p[0] - x, e.p[2] - z) < e.r + 1.2) {hit.push(e); hitE(e, dmgB() * 2.2, d[0] * 6, d[1] * 6)} } H.p[0] += d[0] * 9; H.p[2] += d[1] * 9; ringFx([sx, 0, sz], '#7a3cff', [.4, .15, .9], 3, .5, .1); ringFx(H.p, '#b49cff', [.6, .4, 1], 3, .5, .1); shake = .3}
+        function spawnShadow(p, cl) {const ch = chibi(cl ? {...H.o, cape: 0, cls: 'ninja', pony: 1} : {skin: '#1a1030', hair: '#0c0618', armor: '#140a2a', pants: '#0c0618', trim: '#7a3cff', eye: '#b49cff', cls: 'shadow'}); if (!cl) (function f(n) {if (n.g) n.e = [.14, .05, .34]; n.k.forEach(f)})(ch.root); ch.root.p[0] = p[0]; ch.root.p[2] = p[2]; ch.root.s = [1.1, 1.1, 1.1]; put(ch.root); shadows.push({ch, p: ch.root.p, life: 15 + H.lv, cd: 0}); burst([p[0], .3, p[2]], ['#7a3cff', '#b49cff', '#fff'], 24, 4, .12, .8); ringFx(p, '#7a3cff', [.4, .15, .9], 4, .7, .1)}
+        function animeUlt(c) {
+            const k = H.o.cls, d = aim(), X = H.p[0], Z = H.p[2], dm = dmgU(), col = {samurai: ['#ffffff', '#9ad8ff'], ninja: ['#fff', '#cfd8ff'], star: ['#ff7ad0', '#ffe36b'], archer: ['#b6ff7a', '#ffffff']}[k]; H.mp -= c; H.ucd = 7; H.sw = .25; shake = .7; flash(.4);
+            if (k === 'ninja') {toast('«¡Kage Bunshin no Jutsu!»'); for (let i = 0; i < 5 + Math.floor(H.lv / 3) && shadows.length < 10; i++) {const a = rnd(0, 6.28); spawnShadow([X + Math.cos(a) * 3, 0, Z + Math.sin(a) * 3], 1)} ringFx(H.p, '#ffffff', [1, 1, 1], 10, .8, .1); burst([X, 1, Z], ['#fff', '#cfd8ff'], 60, 5, .2, 1); return }
+            const len = k === 'archer' ? 34 : k === 'star' ? 26 : 13, w = k === 'samurai' ? 2.2 : 2.6, ry = Math.atan2(d[0], d[1]); toast({samurai: '«Iaido: ¡Corte Lunar!»', star: '«¡Rayo Estelar, ilumina el mundo!»', archer: '«¡Flecha Celestial!»'}[k]);
+            const b = put(new N(BOX, col[0], [X + d[0] * len / 2, 1.3, Z + d[1] * len / 2], [w * .9, w * .9, len])); b.r[1] = ry; b.e = hx(col[1]); fxT(b, .7, (q, n) => {n.a = Math.max(.01, 1 - q); const s = w * .9 * (1 - q * .8); n.s = [s, s, len]});
+            for (let i = 0; i <= len; i += 2) {burst([X + d[0] * i, 1.3, Z + d[1] * i], col, 6, 3, .18, .7); if (i % 6 == 0) ringFx([X + d[0] * i, 0, Z + d[1] * i], col[1], [.8, .8, .8], w * 1.6, .6, .2)}
+            enemies.slice().forEach(e => {const dx = e.p[0] - X, dz = e.p[2] - Z, t = dx * d[0] + dz * d[1], s = Math.abs(dx * d[1] - dz * d[0]); if (t > -1 && t < len && s < w + e.r) hitE(e, dm, d[0] * 12, d[1] * 12)});
+            if (k === 'samurai') {const m = put(new N(MOON, '#fff', [X + d[0] * len * .55, 1.4, Z + d[1] * len * .55], [7, 7, 7])); m.e = [1, 1, 1]; m.r[1] = ry - Math.PI / 2; fxT(m, .5, (q, n) => {n.a = Math.max(.01, 1 - q); const s = 7 + q * 3; n.s = [s, s, s]}); H.p[0] += d[0] * len; H.p[2] += d[1] * len}
+            if (k === 'star') {const a = Math.round(H.mhp * .3); H.hp = Math.min(H.mhp, H.hp + a); float('+' + a, [X, 3, Z], '#7dffb0')}
+        }
+        function animeR() {
+            if (busy() || H.rcd > 0) return; if (H.mp < 20) return toast('Maná insuficiente…'); H.mp -= 20; H.rcd = 3; H.sw = .25; const k = H.o.cls, d = aim(), X = H.p[0], Z = H.p[2], cl = {samurai: '#fff', ninja: '#b7c0d0', star: '#ff7ad0', archer: '#d8ffb0'}[k];
+            if (k === 'samurai') {shake = .4; toast('«Ráfaga de tajos»'); for (let i = 0; i < 5; i++)setTimeout(() => {ringFx(H.p, '#fff', [1, 1, 1], 6 + i, .3, .3 + i * .2); burst([H.p[0], 1.2, H.p[2]], ['#fff', '#9ad8ff'], 14, 6, .1, .4); enemies.slice().forEach(e => {const dx = e.p[0] - H.p[0], dz = e.p[2] - H.p[2], dd = Math.hypot(dx, dz); if (dd < 5.2 + e.r) hitE(e, dmgB() * 1.1, dx / (dd || 1) * 3, dz / (dd || 1) * 3)})}, i * 110); return }
+            if (k === 'archer') {const t = nearest(26), tx = t ? t.p[0] : X + d[0] * 10, tz = t ? t.p[2] : Z + d[1] * 10; ringFx([tx, 0, tz], '#b6ff7a', [.4, .8, .2], 9, 1, .2); for (let i = 0; i < 14; i++)setTimeout(() => {const x = tx + rnd(-4, 4), z = tz + rnd(-4, 4), n = put(new N(BOX, '#d8ffb0', [x, 14, z], [.08, 1.2, .08])); n.e = [.5, .7, .3]; fxT(n, .25, (q, n) => n.p[1] = 14 - q * 13.8, () => {burst([x, .3, z], ['#d8ffb0', '#fff'], 6, 3, .1, .4); enemies.slice().forEach(e => {if (Math.hypot(e.p[0] - x, e.p[2] - z) < 2.2 + e.r) hitE(e, dmgB() * 1.3, 0, 0)})})}, i * 60); return }
+            const n0 = k === 'ninja' ? 7 : 9; for (let i = 0; i < n0; i++) {const a = H.face + (i - (n0 - 1) / 2) * .2, v = [Math.sin(a) * 20, Math.cos(a) * 20], n = put(new N(k === 'ninja' ? BOX : SPH, cl, [X + v[0] * .05, 1.3, Z + v[1] * .05], k === 'ninja' ? [.5, .06, .5] : [.35, .35, .35])); n.e = hx(cl).map(x => x * .7); projs.push({n, v, l: 1, dmg: dmgB() * (k === 'ninja' ? 1.6 : 1.4)})} burst([X, 1.3, Z], [cl, '#fff'], 20, 4, .1, .5)
+        }
+        function arise(c) {H.mp -= c; H.ucd = 10; H.sw = .25; shake = .6; flash(.35); ringFx(H.p, '#7a3cff', [.4, .15, .9], 14, 1, .1); ringFx(H.p, '#b49cff', [.6, .4, 1], 8, .8, .12); toast('«¡ARISE!»'); for (let i = 0; i < 4 + Math.floor(H.lv / 3) && shadows.length < 10; i++) {const a = rnd(0, 6.28); spawnShadow([H.p[0] + Math.cos(a) * 3, 0, H.p[2] + Math.sin(a) * 3])} }
+        /* ===== PNJ, misiones y diálogo ===== */
+        const npcs = [], Q = [{t: 'Cazar 5 sapos gigantes', type: 'toad', n: 5, lv: 1, xp: 90, c: 100, d: 'Los sapos de afuera se comen a los aventureros novatos.'}, {t: 'Derrotar al Sapo Rey', type: 'toadking', n: 1, boss: 1, lv: 2, xp: 300, c: 400, d: 'Dicen que ese sapo se tragó una catapulta.'}, {t: 'Cazar 6 lobos sombríos', type: 'wolf', n: 6, lv: 3, xp: 260, c: 250, d: 'Aúllan desde el bosque y atacan en manada.'}, {t: 'Vencer al Dullahan', type: 'dullahan', n: 1, boss: 1, lv: 5, xp: 800, c: 900, d: 'Un caballero sin cabeza maldice la ciudad.'}, {t: 'Exorcizar 6 espectros', type: 'wraith', n: 6, lv: 5, xp: 600, c: 600, d: 'Lanzan maldiciones a distancia.'}, {t: 'Destruir 4 golems', type: 'golem', n: 4, lv: 7, xp: 900, c: 800, d: 'Guardianes de piedra despertaron en las ruinas.'}, {t: 'Derribar al Coloso de Piedra', type: 'colossus', n: 1, boss: 1, lv: 9, xp: 2000, c: 2500, d: 'La última amenaza del valle. ¡Prepara tu mejor poder!'}]; let qi = 0, qs = 0, qp = 0, dlgOpen = false;
+        function npc(name, x, z, cfg, talk) {const ch = chibi({pants: '#3a3a4a', trim: '#d5a34c', eye: '#4a8fd6', ...cfg}); ch.root.p[0] = x; ch.root.p[2] = z; put(ch.root); const tag = document.createElement('div'); tag.className = 'tag'; tag.textContent = name; $('#fl').appendChild(tag); const o = {ch, name, p: ch.root.p, talk, tag}; npcs.push(o); return o}
+        function say(n, t, btns = []) {dlgOpen = true; $('#dn').textContent = n; $('#dt').textContent = t; const b = $('#db'); b.innerHTML = '';[...btns, {l: 'Cerrar [E]', f: closeD}].forEach(x => {const e = document.createElement('button'); e.textContent = x.l; e.onclick = x.f; b.appendChild(e)}); $('#dlg').style.display = 'block'}
+        function closeD() {$('#dlg').style.display = 'none'; dlgOpen = false}
+        const liria = npc('Liria · Gremio', 0, -11.5, {skin: '#f2c8aa', hair: '#8a5a3a', armor: '#4a75a8', long: 1}, () => {
+            const q = Q[qi]; if (!q) return say('Liria', 'Has completado el tablón entero. En Axel eres una leyenda… aunque sigues sin pagar tu deuda con la taberna.');
+            if (qs === 0) say('Liria', `Misión: ${q.t}. Recompensa: ${q.xp} XP y ${q.c} Eris. ${q.d} (Nivel recomendado: ${q.lv})`, [{l: 'Aceptar misión', f: () => {qs = 1; qp = 0; closeD(); hud(); toast('Misión aceptada')}}]);
+            else if (qs === 2) say('Liria', '¡Increíble, lo lograste! Aquí está tu recompensa.', [{l: 'Reclamar', f: () => {H.eris += q.c; gain(q.xp); qi++; qs = 0; qp = 0; closeD(); hud(); toast('+' + q.c + ' Eris')}}]);
+            else say('Liria', `Sigue con: ${q.t} (${qp}/${q.n}). Los sapos rondan fuera del pueblo.`)
+        });
+        npc('Aqua · Diosa (inútil)', -3.6, -2.5, {skin: '#f6d3bb', hair: '#6fd3f2', armor: '#9fd7f5', trim: '#2b5fb0', eye: '#4a9fe0', long: 1, tails: 1, pants: '#e8f3fb'}, () => say('Aqua', '¡Soy una diosa, arrodíllate! ...Vale, una ofrenda de 20 Eris y te curo por completo. Y no menciones el asunto de los cristales de maná.', [{l: 'Ofrendar 20 Eris', f: () => {if (H.eris < 20) return toast('No tienes suficientes Eris.'); H.eris -= 20; H.hp = H.mhp; H.mp = H.mmp; closeD(); burst([H.p[0], .3, H.p[2]], ['#8fe8ff', '#fff'], 40, 3, .1, 1.2); hud(); toast('Aqua te cura. ¡Llora de felicidad por las monedas!')}}]));
+        npc('Megumin · Archimaga', 4.5, -5, {skin: '#f6d3bb', hair: '#3a2230', armor: '#4a2b30', trim: '#c43a3a', eye: '#d83a3a', hat: 'wizard', cape: '#5a2b2b', cls: 'mage', orb: '#ff3a1a'}, () => say('Megumin', pick(['¡La explosión es el arte supremo! Un solo hechizo al día… y luego a que alguien me cargue.', 'Usa Q como Archimago y comprobarás que el poder tiene un precio: te quedas sin maná y en el suelo.', 'Cada sapo es solo un objetivo de práctica, ¡no hay mejor blanco para mi magia!'])));
+        npc('Darkness · Cruzada', 6.5, 3.5, {skin: '#f6d3bb', hair: '#e8c76a', armor: '#9aa6b5', trim: '#d5a34c', eye: '#4a8fd6', long: 0, pony: 1, cls: 'warrior'}, () => say('Darkness', pick(['¡Que los sapos me embistan! Mi defensa es insuperable… aunque mi puntería no tanto.', 'Un Cruzado debe proteger a su grupo. ¡Que me golpeen, por favor!', 'Nn… ¡Qué situación tan… honorable!'])));
+        npc('Pipo · Comerciante', -9.5, 5, {skin: '#d9a27c', hair: '#3a2a1a', armor: '#9b6938', trim: '#34765b', eye: '#2a2a2a', hat: 'wizard', hatc: '#34765b'}, () => say('Pipo', '¡Pociones frescas! No garantizo que funcionen, pero la etiqueta es magnífica.', [{l: 'Poción · 30 Eris', f: () => {if (H.eris < 30) return toast('Faltan Eris.'); H.eris -= 30; H.hp = Math.min(H.mhp, H.hp + 60); H.mp = Math.min(H.mmp, H.mp + 40); hud(); toast('+60 HP · +40 MP')}}]));
+        const A = (n, x, z, cfg, L) => npc(n, x, z, {skin: '#f6d3bb', ...cfg}, () => say(n.split(' ·')[0], pick(L)));
+        A('Kaito · Samurái', -6.5, -7, {hair: '#1a1a2a', armor: '#2a2f4a', trim: '#c0303a', eye: '#d84a4a', pony: 1, cls: 'samurai'}, ['El camino de la espada es silencioso… salvo cuando un sapo te traga.', 'Presiona Q con el sable y la luna cortará el horizonte.', 'Mi honor no me permite correr. Mis piernas, sí.']);
+        A('Hana · Kunoichi', 9, -8, {hair: '#2a2a4a', armor: '#2a3a6a', trim: '#cfd6e4', eye: '#7ab8ff', pony: 1, cls: 'ninja'}, ['Un buen ninja jamás se deja ver… ¿por qué me hablas tan fuerte?', '¡Cree en tus clones, dattebayo!', 'Las sombras son mis mejores amigas.']);
+        A('Sakura · Maga Estelar', -8, 2, {hair: '#ff9ad0', armor: '#ff7ac0', trim: '#ffe36b', eye: '#ff5aa0', tails: 1, cls: 'star'}, ['¡En nombre de las estrellas, te purificaré… y a los sapos también!', 'El poder del amor cura casi todo. Lo demás lo cura Aqua.', '¡Transformación completa, ★ brillo máximo!']);
+        A('Lyra · Arquera Élfica', 3, 7.5, {hair: '#e8f2c0', armor: '#3f8a5c', trim: '#d5c27a', eye: '#3fbf7f', long: 1, cls: 'archer'}, ['Mi flecha ve más lejos que tu mapa.', 'El bosque susurra… dice que huyas de los lobos.', 'Con R llueven flechas del cielo. Úsalo con sabiduría.']);
+        const mark = put(new N(SPH, '#ffd23b', [0, 3.6, -11.5], [.22, .35, .22])); mark.e = [.8, .6, 0];
+
+        /* ===== Interfaz ===== */
+        let tt; function toast(m) {const e = $('#toast'); e.textContent = m; e.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => e.style.display = 'none', 2400)}
+        function float(t, p, c) {const el = document.createElement('div'); el.className = 'f'; el.textContent = t; el.style.color = c; $('#fl').appendChild(el); fls.push({el, p: p.slice(), t: 0})}
+        function hud() {
+            $('#cn').textContent = ({mage: 'Archimago', warrior: 'Cruzado', shadow: 'Monarca de Sombras', samurai: 'Samurái', ninja: 'Kunoichi', star: 'Maga Estelar', archer: 'Arquera Élfica'})[H.o.cls] + ' · Nv ' + H.lv; $('#hpt').textContent = Math.ceil(H.hp) + ' / ' + H.mhp; $('#mpt').textContent = Math.floor(H.mp) + ' / ' + H.mmp; $('#xpt').textContent = H.xp + ' / ' + H.xr;
+            $('#hpb').style.width = H.hp / H.mhp * 100 + '%'; $('#mpb').style.width = H.mp / H.mmp * 100 + '%'; $('#xpb').style.width = H.xp / H.xr * 100 + '%'; $('#eris').textContent = 'Eris: ' + H.eris; $('#pts').textContent = 'Puntos: ' + H.pts; document.querySelectorAll('#stat button').forEach(b => b.textContent = ({str: 'FUE', vit: 'VIT', agi: 'AGI', int: 'INT'})[b.dataset.s] + ' ' + H.st[b.dataset.s] + ' +'); $('#spt').textContent = 'Estadísticas · Pts: ' + H.sp; $('#b4').textContent = 'Mejorar hab. (Nv ' + H.sk + ')';
+            const q = Q[qi]; $('#qt').textContent = !q ? 'Todas las misiones completadas.' : qs === 0 ? 'Habla con Liria para la próxima misión.' : qs === 2 ? '¡Completada! Vuelve con Liria.' : q.t + ' (' + qp + '/' + q.n + ')'
+        }
+        const O = H.o;[['height', 'h'], ['width', 'w']].forEach(([i, k]) => $('#' + i).oninput = e => {O[k] = +e.target.value; H.ch.root.s = [O.w, O.h, O.w]});
+        [['skin', 'skin'], ['hair', 'hair'], ['armor', 'armor']].forEach(([i, k]) => $('#' + i).oninput = e => {O[k] = e.target.value; build()});
+        $('#hat').onchange = e => {O.hat = e.target.value; build()}; $('#cape').onchange = e => {O.cape = e.target.value; build()}; $('#cls').onchange = e => {O.cls = e.target.value; build(); hud()};
+        $('#b1').onclick = basic; $('#b2').onclick = ult; $('#b3').onclick = heal; $('#b5').onclick = rskill; document.querySelectorAll('#stat button').forEach(b => b.onclick = () => {if (H.sp < 1) return toast('Sin puntos: sube de nivel.'); H.st[b.dataset.s]++; H.sp--; stats(); hud()}); $('#b4').onclick = () => {if (H.pts < 1) return toast('Sin puntos: sube de nivel.'); H.pts--; H.sk++; hud(); toast('¡Habilidad mejorada! Más daño y radio.')};
+        const K = {}; let yaw = 0, pitch = .3, dist = 9, drag = 0, lx = 0, ly = 0;
+        function interact() {if (dlgOpen) return closeD(); let b = null, bd = 3.6; for (const n of npcs) {const d = Math.hypot(n.p[0] - H.p[0], n.p[2] - H.p[2]); if (d < bd) {bd = d; b = n} } b ? b.talk() : toast('No hay nadie lo bastante cerca.')}
+        addEventListener('keydown', e => {if (/INPUT|SELECT/.test(document.activeElement.tagName)) document.activeElement.blur(); const k = e.key.toLowerCase(); K[k] = 1; if (k === ' ') {e.preventDefault(); basic()} if (k === 'q') ult(); if (k === 'f') heal(); if (k === 'r') rskill(); if (k === 'e') interact(); if (k === 'c') {const c = $('#custom'); c.style.display = c.style.display === 'none' ? 'block' : 'none'} });
+        addEventListener('keyup', e => K[e.key.toLowerCase()] = 0);
+        cv.addEventListener('pointerdown', e => {drag = 1; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId)}); cv.addEventListener('pointerup', () => drag = 0);
+        cv.addEventListener('pointermove', e => {if (!drag) return; yaw -= (e.clientX - lx) * .005; pitch = Math.max(.02, Math.min(1, pitch + (e.clientY - ly) * .004)); lx = e.clientX; ly = e.clientY});
+        cv.addEventListener('wheel', e => dist = Math.max(5, Math.min(16, dist + e.deltaY * .01)));
+        function resize() {const r = Math.min(devicePixelRatio, 2); cv.width = innerWidth * r; cv.height = innerHeight * r; gl.viewport(0, 0, cv.width, cv.height); proj = M.P(1.05, cv.width / cv.height, .1, 400)}
+        addEventListener('resize', resize); resize();
+
+        /* ===== Bucle ===== */
+        const scr = p => {const f = r => VP[r] * p[0] + VP[4 + r] * p[1] + VP[8 + r] * p[2] + VP[12 + r], w = f(3); return w < .1 ? null : [(f(0) / w * .5 + .5) * innerWidth, (.5 - f(1) / w * .5) * innerHeight]};
+        let last = 0, time = 0, hudT = 0, wave = 0;
+        function upd(dt) {
+            time += dt; const B = H.o.cls === 'mage';
+            H.cd = Math.max(0, H.cd - dt); H.rcd = Math.max(0, (H.rcd || 0) - dt); H.hcd = Math.max(0, H.hcd - dt); H.ucd = Math.max(0, H.ucd - dt); H.ex = Math.max(0, H.ex - dt); H.sw = Math.max(0, H.sw - dt);
+            if (H.ex <= 0 && !H.dead) H.mp = Math.min(H.mmp, H.mp + (B ? 5 : 3) * dt);
+            if (H.cast > 0) {H.cast -= dt; const c = $('#chant'); c.textContent = H.cast > 1.1 ? H.chant[0] : H.cast > .45 ? H.chant[1] : H.chant[2]}
+            if (H.dead > 0) {H.dead -= dt; if (H.dead <= 0) {H.dead = 0; H.hp = H.mhp * .6; H.eris = Math.floor(H.eris * .9); H.p[0] = 0; H.p[2] = 6; hud()} }
+            let mv = 0; if (!busy()) {
+                const f = [-Math.sin(yaw), -Math.cos(yaw)], r = [Math.cos(yaw), -Math.sin(yaw)]; let x = 0, z = 0; if (K.w) {x += f[0]; z += f[1]} if (K.s) {x -= f[0]; z -= f[1]} if (K.d) {x += r[0]; z += r[1]} if (K.a) {x -= r[0]; z -= r[1]}
+                if (x || z) {const l = Math.hypot(x, z), sp = (K.shift ? 9 : 5.5) * (1 + .03 * H.st.agi) * dt; H.p[0] += x / l * sp; H.p[2] += z / l * sp; const ta = Math.atan2(x, z); H.face += Math.atan2(Math.sin(ta - H.face), Math.cos(ta - H.face)) * Math.min(1, dt * 14); mv = K.shift ? 1.4 : 1}
+            }
+            H.p[0] = Math.max(-85, Math.min(85, H.p[0])); H.p[2] = Math.max(-85, Math.min(85, H.p[2]));
+            if (H.spin > 0) {H.spin -= dt; H.face += dt * 20} const R = H.ch.root, tr = (H.ex > 0 || H.dead) ? 1.5 : 0; R.r[1] = H.face; R.r[0] += (tr - R.r[0]) * Math.min(1, dt * 10); anim(H.ch, time, mv);
+            const AU = {star: ['#ff9ad8', '#ffe36b'], ninja: ['#9aa8ff', '#cfd8ff'], samurai: ['#fff', '#9ad8ff'], archer: ['#b6ff7a', '#e8ffc0'], mage: ['#ff8a3a', '#ffd36b'], warrior: ['#ffe28a', '#fff'], shadow: ['#7a3cff', '#b49cff']}[H.o.cls]; if (!H.dead && Math.random() < .35) spark([H.p[0] + rnd(-.6, .6), rnd(.2, 2.4), H.p[2] + rnd(-.6, .6)], [0, rnd(.4, 1.2), 0], pick(AU), .07, .9, 0);
+            if (Math.random() < .4) spark([H.p[0] + rnd(-16, 16), rnd(5, 10), H.p[2] + rnd(-16, 16)], [rnd(-.9, -.2), -rnd(.8, 1.3), rnd(-.3, .3)], pick(['#ffc2dc', '#ffd9e8', '#fff']), .09, 5, 0);
+            if (H.cast > 0) {H.ch.arms.forEach(a => a.r[0] = -2.7)} else if (H.sw > 0) H.ch.arms[1].r[0] = -2.4 + (1 - H.sw / .25) * 3.2;
+            // enemigos
+            const q = Q[qi], bt = q && qs === 1 && q.boss ? q.type : null, nb = bt && !enemies.some(e => e.type === bt);
+            if (enemies.length < 10 + Math.min(8, H.lv) || nb) {wave -= dt; if (wave <= 0) {wave = 1.2; if (nb) mob(bt, 1); else {const pool = ['toad', 'toad']; if (H.lv >= 2) pool.push('wolf', 'wolf'); if (H.lv >= 4) pool.push('wraith'); if (H.lv >= 6) pool.push('golem'); if (q && qs === 1 && !q.boss) pool.push(q.type, q.type, q.type); mob(pick(pool))} } }
+            for (const e of enemies) {
+                const dx = H.p[0] - e.p[0], dz = H.p[2] - e.p[2], d = Math.hypot(dx, dz); e.cd -= dt;
+                if (e.fl > 0) {e.fl -= dt; if (e.fl <= 0) glow(e.n, 0)} let sp = 0;
+                if (d < 28 && !H.dead) {e.face = Math.atan2(dx, dz); if (d > e.r + (e.rg || .9)) sp = e.spd; else if (e.cd <= 0) {e.cd = e.acd || 1.6; if (e.rg) burst([H.p[0], 1.5, H.p[2]], ['#c78bff', '#7a2cff'], 14, 4, .12, .5); hurt(e.dmg, e)} }
+                else {e.wt -= dt; if (e.wt <= 0) {e.wt = rnd(2, 5); e.dir = rnd(0, 6.28)} sp = .8; e.face = e.dir}
+                e.hop += dt * (sp > 1 ? 7 : 2); const j = Math.abs(Math.sin(e.hop)); e.b.p[1] = (e.hv || 0) + j * (sp > 1 ? (e.hj ?? .9) : .12); const s = sp * (.3 + j) * dt; e.p[0] += Math.sin(e.face) * s + e.kv[0] * dt; e.p[2] += Math.cos(e.face) * s + e.kv[1] * dt; e.kv = e.kv.map(v => v * Math.max(0, 1 - dt * 6)); e.n.r[1] = e.face
+            }
+            for (let i = shadows.length - 1; i >= 0; i--) {
+                const s = shadows[i]; s.life -= dt; s.cd -= dt; let tg = null, bd = 28, mvf = 0; for (const e of enemies) {const d = Math.hypot(e.p[0] - s.p[0], e.p[2] - s.p[2]); if (d < bd) {bd = d; tg = e} }
+                if (tg) {const dx = tg.p[0] - s.p[0], dz = tg.p[2] - s.p[2], d = Math.hypot(dx, dz) || 1; s.ch.root.r[1] = Math.atan2(dx, dz); if (d > tg.r + 1) {s.p[0] += dx / d * 7 * dt; s.p[2] += dz / d * 7 * dt; mvf = 1.2} else if (s.cd <= 0) {s.cd = .8; burst([tg.p[0], 1.2, tg.p[2]], ['#7a3cff', '#b49cff'], 8, 4, .1, .4); hitE(tg, dmgB() * .9, dx / d * 5, dz / d * 5)} }
+                else {const dx = H.p[0] - s.p[0], dz = H.p[2] - s.p[2], d = Math.hypot(dx, dz) || 1; if (d > 4) {s.p[0] += dx / d * 6 * dt; s.p[2] += dz / d * 6 * dt; s.ch.root.r[1] = Math.atan2(dx, dz); mvf = 1} }
+                anim(s.ch, time, mvf, i); if (s.life <= 0) {burst([s.p[0], 1, s.p[2]], ['#7a3cff', '#b49cff'], 14, 3, .1, .6); rem(s.ch.root); shadows.splice(i, 1)}
+            }
+            for (let i = projs.length - 1; i >= 0; i--) {
+                const p = projs[i]; p.n.p[0] += p.v[0] * dt; p.n.p[2] += p.v[1] * dt; p.l -= dt; spark(p.n.p, [rnd(-1, 1), rnd(0, 1), rnd(-1, 1)], pick(['#ff6b0b', '#ffb52e']), .1, .35, 0);
+                const h = enemies.find(e => Math.hypot(e.p[0] - p.n.p[0], e.p[2] - p.n.p[2]) < e.r + .5); if (h || p.l <= 0) {if (h) {burst(p.n.p, ['#ff3108', '#ffb52e', '#fff0a0'], 16, 5, .14, .6); hitE(h, p.dmg, p.v[0] * .3, p.v[1] * .3)} rem(p.n); projs.splice(i, 1)}
+            }
+            for (let i = Pt.length - 1; i >= 0; i--) {const p = Pt[i]; p.l -= dt; const n = p.n; n.p[0] += p.v[0] * dt; n.p[1] = Math.max(.05, n.p[1] + p.v[1] * dt); n.p[2] += p.v[2] * dt; p.v[1] -= p.g * dt; if (p.rot) n.r[0] += dt * 6; const k = Math.max(.01, p.l / p.L), s = p.s * k; n.s = [s, s, s]; if (p.l <= 0) {rem(n); Pt.splice(i, 1)} }
+            for (let i = Tk.length - 1; i >= 0; i--) {const t = Tk[i]; t.t += dt; t.f && t.f(Math.min(1, t.t / t.d), t.n); if (t.t >= t.d) {rem(t.n); Tk.splice(i, 1); t.fin && t.fin()} }
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const c = coins[i], n = c.n; n.r[1] += dt * 5; n.p[0] += c.v[0] * dt; n.p[2] += c.v[2] * dt; n.p[1] += c.v[1] * dt; c.v[1] -= 18 * dt; if (n.p[1] < .5) {n.p[1] = .5; c.v = [0, 0, 0]}
+                const d = Math.hypot(n.p[0] - H.p[0], n.p[2] - H.p[2]); if (d < 4 && c.v[1] === 0) {n.p[0] += (H.p[0] - n.p[0]) * dt * 6; n.p[2] += (H.p[2] - n.p[2]) * dt * 6} if (d < 1.2) {H.eris += 5; rem(n); coins.splice(i, 1); hud()}
+            }
+            for (const n of npcs) {const d = Math.hypot(H.p[0] - n.p[0], H.p[2] - n.p[2]); n.ch.root.r[1] = d < 9 ? Math.atan2(H.p[0] - n.p[0], H.p[2] - n.p[2]) : n.ch.root.r[1]; anim(n.ch, time, 0, n.p[0]); const s = scr([n.p[0], 3.4, n.p[2]]); n.tag.style.display = s && d < 18 ? 'block' : 'none'; if (s) {n.tag.style.left = s[0] + 'px'; n.tag.style.top = s[1] + 'px'} }
+            mark.p[1] = 3.9 + Math.sin(time * 3) * .2; mark.r[1] = time * 2; mark.v = qs !== 1 ? 1 : 0;
+            clouds.forEach(c => {c.p[0] += dt * 1.5; if (c.p[0] > 150) c.p[0] = -150});
+            cin = H.cast > 0 ? Math.min(1, cin + dt * 3) : Math.max(0, cin - dt * 2.5); pull = Math.max(0, pull - RD * .25); pv += (pull - pv) * Math.min(1, RD * 3); const pe = pitch + (.05 - pitch) * cin + pv * .18, de = dist + (6.5 - dist) * cin + pv * (5 + radU() * .9), ye = yaw + cin * .7; for (let i = 0; i < 3; i++)SKY[i] = SB[i] + (SD[i] - SB[i]) * cin; sun.v = cin < .3 ? 1 : 0; clouds.forEach(c => c.v = cin < .3 ? 1 : 0); const tg = [H.p[0], 1.7 * H.o.h + cin * 3, H.p[2]], h = Math.cos(pe) * de; shake = Math.max(0, shake - dt * 2); const sk = shake * .25;
+            const eye = [tg[0] + Math.sin(ye) * h + rnd(-sk, sk), tg[1] + Math.sin(pe) * de + 1 - cin * 1.5 + rnd(-sk, sk), tg[2] + Math.cos(ye) * h]; EYE = eye; cam = M.L(eye, tg, [0, 1, 0]); VP = M.mul(proj, cam);
+            for (let i = fls.length - 1; i >= 0; i--) {const f = fls[i]; f.t += dt; f.p[1] += dt * 1.5; const s = scr(f.p); if (s) {f.el.style.left = s[0] + 'px'; f.el.style.top = s[1] + 'px'} f.el.style.opacity = 1 - f.t; if (f.t >= 1) {f.el.remove(); fls.splice(i, 1)} }
+            hudT -= dt; if (hudT <= 0) {hudT = .1; hud()}
+        }
+        let ts = 1, RD = .016; function frame(now) {requestAnimationFrame(frame); const rd = Math.min((now - last) / 1000 || 0, .05); last = now; RD = rd; ts = Math.min(1, ts + rd * .8); upd(rd * ts); render()}
+        hud(); requestAnimationFrame(frame);
+        setTimeout(() => toast('Bienvenido a Axel. Habla con Liria [E] en el gremio.'), 600);
+    </script>
+</body>
+
+</html>
